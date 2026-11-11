@@ -53,6 +53,31 @@ Lo que **no** está hecho: la app de UI (`fm1-perf`) todavía no existe. `fm1ctl
 - **No tocar la flash del aparato desde acá.** Este repo manda MIDI; el flasheo vive en el proyecto
   `m-vave` (`probe/`, `firmware/`, `NOTAS.md`) con su propio procedimiento y su camino de vuelta.
 
+## Prueba en vivo (2026-11-11, FM-1_909 · JIANT 0.9.9-par12)
+
+Ida: `fm1ctl` abrió el puerto `Felucca`, leyó la identidad por handshake y envió `bpm 140`, `section B`,
+`section A`, `project 2` y `CC74` en el canal 1, todos aceptados.
+
+Vuelta: escuchando el puerto 90 s mientras el aparato tocaba (PLAY), llegaron **96 mensajes**:
+
+| medida | valor |
+|---|---|
+| note-on / note-off | 48 / 48 (balance 0: sin notas colgadas) |
+| canales | sólo el 1 |
+| alturas | 23..55 (16 distintas) |
+| velocidad | 100 constante (pasos del secuenciador, no ejecución humana) |
+| otros mensajes (CC, clock, SysEx) | ninguno |
+
+Consecuencias operativas, ya incorporadas al diseño:
+
+- El aparato **no confirma** lo que recibe: la única verificación de la vuelta es que emita. Por eso la UI
+  tiene que ser optimista y reconciliar por el eco.
+- Las notas del secuenciador salieron ⇒ el ajuste `MENU > CONTROL > MIDI OUT` está en `ALL`. En `KEYS`
+  (default) sólo salen las teclas, y en `OFF`/`CLOCK` no hay notas: una ventana muda no es una falla del
+  cliente.
+- No hubo bytes de clock: con `ALL` el reloj no se manda. Si la app necesita seguir el tempo, hay que
+  pedirle al usuario `MIDI OUT = CLOCK` (o seguir el reloj por otra vía).
+
 ## Deuda conocida
 
 | causa | arreglo |
@@ -60,4 +85,5 @@ Lo que **no** está hecho: la app de UI (`fm1-perf`) todavía no existe. `fm1ctl
 | La CLI paniquea con *broken pipe* si la salida se corta (`fm1ctl params \| head`): `println!` entra en pánico con EPIPE | escribir por `io::stdout()` ignorando `ErrorKind::BrokenPipe`; el `check.sh` lo esquiva con `grep` sin `-q` |
 | Sin hot-plug: si el aparato se desconecta, `send` empieza a fallar y hay que reabrir | sondeo de `ports` cada N ms en la app (midir no notifica), y botón de reconectar |
 | `Device::identify` (en el core) y `Port::identify` (en el adaptador) se solapan | dejar uno solo cuando la app de UI defina de quién es la responsabilidad |
-| No hay prueba en vivo de los comandos de setlist | con el aparato conectado: `fm1ctl section B` y mirar la pantalla |
+| No hay prueba en vivo de los comandos de setlist | **cerrado 2026-11-11**: se enviaron `section B/A`, `project 2` y `bpm 140` con el aparato conectado; ver §Prueba en vivo |
+| El listener no imprime tiempos: sirve para ver mensajes, no para medir tempo ni jitter | imprimir `Instant`/stamp por mensaje y calcular el intervalo entre pasos |
