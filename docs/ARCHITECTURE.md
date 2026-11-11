@@ -38,6 +38,11 @@ Lo que esto compra, concretamente: los 22 tests del dominio corren sin aparato y
 | `fm1-core/src/transport.rs` | los traits `MidiOut`/`MidiIn` y los dobles `Recorder`, `ScriptedIn`, `Silent` | no transporta nada |
 | `fm1-midi/src/lib.rs` | descubre puertos por nombre (`fm1`, `jiant`, `felucca`, `smk`), abre salida, lee en un hilo, `identify()` | no decide qué mandar |
 | `fm1ctl/src/main.rs` | CLI: puertos, identidad, mensajes crudos, intenciones, setlists, `--dry` | no dibuja |
+| `fm1-perf/src/app.rs` | estado de la sesión (paso actual, valores, historial de envíos), teclado, layout, `--shot` | no abre puertos ni sabe de bytes |
+| `fm1-perf/src/link.rs` | el único punto que habla con `fm1-midi`: sondeo de puertos en un hilo y envío de intenciones | no dibuja ni guarda estado |
+| `fm1-perf/src/theme.rs` | tokens de «Ceniza» (los de `DESIGN.md`) y `Visuals` de egui | no decide layout |
+| `fm1-perf/src/panels/*` | setlist, escenario y cabecera/pie: cada panel dibuja en el `Rect` que le dan | no deciden el tamaño del otro |
+| `fm1-perf/src/widgets.rs` | pelo de 1 px, regla de marcas, franja de parámetro | no conoce el dominio |
 
 ## El protocolo, en una tabla
 

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>fm1lab — panel</title>
+<style>
+  :root{
+    --ink:#07080a; --panel:#0b0d10; --raise:#101317;
+    --line:rgba(233,237,242,.09); --line-2:rgba(233,237,242,.18);
+    --text:#e9edf2; --dim:#7d8691; --dimmer:#4d545d;
+    --signal:#c8f751; --hot:#ff6b4a;
+    --sans:ui-sans-serif,"SF Pro Text",system-ui,-apple-system,"Helvetica Neue",sans-serif;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 90% at 78% -10%, rgba(200,247,81,.055), transparent 60%),
+      radial-gradient(90% 70% at 0% 110%, rgba(255,255,255,.035), transparent 55%),
+      var(--ink);
+    color:var(--text); font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    display:grid; grid-template-rows:auto 1fr auto;
+    width:1120px; height:700px; overflow:hidden;
+  }
+  /* hairlines + ruler: la única "decoración" es información de escala */
+  .rule{height:1px;background:var(--line)}
+  .ticks{
+    height:7px;
+    background:
+      repeating-linear-gradient(90deg, var(--line-2) 0 1px, transparent 1px 12px),
+      repeating-linear-gradient(90deg, rgba(233,237,242,.28) 0 1px, transparent 1px 60px);
+    opacity:.7;
+  }
+  /* ── cabecera ───────────────────────────────────────────── */
+  header{display:flex;align-items:center;gap:26px;padding:22px 30px 0}
+  .mark{display:flex;align-items:baseline;gap:10px}
+  .mark b{font-weight:600;font-size:13px;letter-spacing:.22em;text-transform:uppercase}
+  .mark span{font-family:var(--mono);font-size:10.5px;color:var(--dimmer);letter-spacing:.08em}
+  .stat{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;color:var(--dim)}
+  .dot{width:5px;height:5px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 3px rgba(200,247,81,.12)}
+  .stat b{color:var(--text);font-weight:500}
+  .spacer{flex:1}
+  .lbl{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dimmer)}
+  .bpm{display:flex;align-items:baseline;gap:7px}
+  .bpm b{font-family:var(--mono);font-size:19px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .bpm i{font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--dimmer);letter-spacing:.1em}
+
+  /* ── cuerpo ─────────────────────────────────────────────── */
+  main{display:grid;grid-template-columns:352px 1fr;min-height:0}
+  .set{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .set > .head{padding:20px 30px 12px;display:flex;justify-content:space-between;align-items:center}
+  ol{list-style:none;overflow:auto;padding:0 18px 18px}
+  li{
+    display:grid;grid-template-columns:34px 1fr auto;align-items:center;gap:12px;
+    padding:13px 12px;cursor:pointer;position:relative;
+    border-bottom:1px solid rgba(233,237,242,.045);
+  }
+  li .n{font-family:var(--mono);font-size:10px;color:var(--dimmer);letter-spacing:.06em}
+  li .t{font-size:13.5px;color:var(--dim);letter-spacing:.005em}
+  li .k{font-family:var(--mono);font-size:9.5px;color:var(--dimmer);opacity:0;transition:opacity .15s}
+  li:hover .t{color:var(--text)}
+  li:hover .k{opacity:1}
+  li.on{background:linear-gradient(90deg, rgba(200,247,81,.07), rgba(200,247,81,0) 70%)}
+  li.on::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;background:var(--signal)}
+  li.on .n,li.on .t{color:var(--text)}
+  li.on .t{font-weight:500}
+
+  /* ── escenario ──────────────────────────────────────────── */
+  .stage{padding:26px 34px 22px;display:flex;flex-direction:column;min-height:0;position:relative}
+  .now{display:flex;align-items:flex-end;gap:20px}
+  .glyph{
+    font-size:104px;line-height:.82;font-weight:200;letter-spacing:-.05em;
+    color:var(--text);text-shadow:0 0 60px rgba(200,247,81,.10);
+  }
+  .glyph em{font-style:normal;color:var(--signal)}
+  .meta{padding-bottom:8px}
+  .meta .p{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .meta .s{font-family:var(--mono);font-size:11px;color:var(--dimmer);margin-top:6px}
+  .transport{margin-left:auto;text-align:right;padding-bottom:6px}
+  .transport .state{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--signal)}
+  .transport .bar{margin-top:9px;width:132px;height:1px;background:var(--line-2);position:relative}
+  .transport .bar i{position:absolute;inset:0 auto 0 0;width:38%;background:var(--signal)}
+
+  .meters{margin-top:auto;display:grid;gap:0}
+  .meter{display:grid;grid-template-columns:92px 1fr 46px;align-items:center;gap:16px;padding:14px 0;border-top:1px solid var(--line)}
+  .meter .v{font-family:var(--mono);font-size:12px;text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
+  .track{height:2px;background:rgba(233,237,242,.10);position:relative}
+  .track i{position:absolute;inset:0 auto 0 0;background:var(--dim)}
+  .meter.hot .track i{background:var(--signal)}
+  .meter.hot .v{color:var(--signal)}
+
+  footer{display:flex;align-items:center;gap:20px;padding:14px 30px;border-top:1px solid var(--line)}
+  footer .hint{font-family:var(--mono);font-size:10px;color:var(--dimmer)}
+  footer .hint b{color:var(--dim);font-weight:500}
+  footer .right{margin-left:auto;display:flex;gap:18px}
+</style>
+</head>
+<body>
+  <header>
+    <div class="mark"><b>fm1lab</b><span>0.1 · panel</span></div>
+    <div class="stat"><span class="dot"></span><b>FM-1_909</b><span>·</span><span>ch 16</span><span>·</span><span>midi out all</span></div>
+    <div class="spacer"></div>
+    <div class="bpm"><b id="bpm">140.0</b><i>bpm</i></div>
+  </header>
+  <div class="ticks"></div>
+
+  <main>
+    <section class="set">
+      <div class="head"><span class="lbl">set · viernes</span><span class="lbl" id="count">6 pasos</span></div>
+      <ol id="steps">
+        <li><span class="n">01</span><span class="t">proyecto 3 · B</span><span class="k">1</span></li>
+        <li class="on"><span class="n">02</span><span class="t">sección A</span><span class="k">2</span></li>
+        <li><span class="n">03</span><span class="t">sección B</span><span class="k">3</span></li>
+        <li><span class="n">04</span><span class="t">T1 sonido 41</span><span class="k">4</span></li>
+        <li><span class="n">05</span><span class="t">proyecto 2 · D</span><span class="k">5</span></li>
+        <li><span class="n">06</span><span class="t">sección C</span><span class="k">6</span></li>
+      </ol>
+    </section>
+
+    <section class="stage">
+      <div class="now">
+        <div class="glyph"><em id="g">A</em></div>
+        <div class="meta">
+          <div class="p" id="p">proyecto 3</div>
+          <div class="s" id="s">enviado · 19:42:07</div>
+        </div>
+        <div class="transport">
+          <div class="state" id="state">sonando</div>
+          <div class="bar"><i id="prog"></i></div>
+        </div>
+      </div>
+
+      <div class="meters">
+        <div class="meter"><span class="lbl">cutoff</span><div class="track"><i style="width:58%"></i></div><span class="v">74</span></div>
+        <div class="meter hot"><span class="lbl">dj filter</span><div class="track"><i style="width:50%"></i></div><span class="v">0</span></div>
+        <div class="meter"><span class="lbl">delay</span><div class="track"><i style="width:28%"></i></div><span class="v">35</span></div>
+        <div class="meter"><span class="lbl">reverb · room</span><div class="track"><i style="width:71%"></i></div><span class="v">90</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <span class="hint"><b>1–6</b> disparar</span>
+    <span class="hint"><b>espacio</b> play/stop</span>
+    <span class="hint"><b>⌥↑↓</b> tempo</span>
+    <span class="hint"><b>esc</b> pánico</span>
+    <div class="right"><span class="lbl">sin ack · estado optimista</span></div>
+  </footer>
+
+<script>
+  const steps = [...document.querySelectorAll('#steps li')];
+  const g = document.getElementById('g'), p = document.getElementById('p'), s = document.getElementById('s');
+  const state = document.getElementById('state'), prog = document.getElementById('prog');
+  const texts = steps.map(li => li.querySelector('.t').textContent);
+  let current = 1, playing = true, t = 0;
+  function fire(i){
+    current = i;
+    steps.forEach((li, k) => li.classList.toggle('on', k === i));
+    const label = texts[i];
+    const sec = label.match(/(?:sección|·)\s*([A-D])\b/i);
+    g.textContent = sec ? sec[1].toUpperCase() : '·';
+    p.textContent = label.split('·')[0].trim();
+    s.textContent = 'enviado · ' + new Date().toLocaleTimeString('es-CL', {hour12:false});
+  }
+  steps.forEach((li, i) => li.addEventListener('click', () => fire(i)));
+  document.addEventListener('keydown', e => {
+    const n = parseInt(e.key, 10);
+    if (n >= 1 && n <= steps.length) fire(n - 1);
+    if (e.code === 'Space') { e.preventDefault(); playing = !playing; state.textContent = playing ? 'sonando' : 'parado'; }
+  });
+  setInterval(() => {
+    if (!playing) return;
+    t = (t + 1) % 100;
+    prog.style.width = Math.max(4, t) + '%';
+  }, 60);
+</script>
+</body>
+</html>

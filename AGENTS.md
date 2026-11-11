@@ -19,6 +19,8 @@ python3 scripts/gen_nrpn.py --check          # falla si el mapa quedó viejo
 cargo run --profile fast -p fm1ctl -- ports  # puertos MIDI visibles
 cargo run --profile fast -p fm1ctl -- info   # identidad del aparato (handshake de lectura)
 cargo run --profile fast -p fm1ctl -- bpm 140 --dry   # bytes, sin abrir puerto
+cargo run --profile fast -p fm1-perf                  # la ventana de performance
+cargo run --profile fast -p fm1-perf -- --shot shots/panel.png --demo   # captura, sin ojos
 openspec validate --specs --strict           # valida las specs
 ```
 
@@ -35,6 +37,8 @@ Perfiles: `fast` para iterar (~15 s por cambio), `release` para uso, `dist` para
 - **egui/eframe está pinneado en 0.32 por ADR-0002.** Subir de versión es una reescritura, no un bump.
 - **La UI no habla con el aparato.** Escribe intenciones en el dominio (`Device`) y el adaptador las
   manda. Si un panel necesita bytes, está en la capa equivocada.
+- **El dibujo se verifica con `--shot`.** Un cambio de tema o de layout se cierra con una captura en
+  `shots/`, no con "quedó lindo": es el equivalente visual de `cargo test`.
 - **La app no crece en un archivo.** `app.rs` de la app de UI se queda bajo ~1.500 líneas, con los
   paneles en `panels/*.rs`. Es la lección del proyecto hermano (`candil`), donde `app.rs` llegó a 10.473
   líneas y ya no se puede probar sin pantalla.

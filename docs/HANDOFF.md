@@ -11,7 +11,8 @@ updated: 2026-11-11
 
 | cosa | número | comando |
 |---|---|---|
-| crates | 3 (`fm1-core`, `fm1-midi`, `fm1ctl`) | `cargo metadata --no-deps` |
+| crates | 4 (`fm1-core`, `fm1-midi`, `fm1ctl`, `fm1-perf`) | `cargo metadata --no-deps` |
+| app de UI | 1.261 líneas de Rust, binario `fast` de 6,1 MB | `wc -l crates/fm1-perf/src/*.rs crates/fm1-perf/src/panels/*.rs` |
 | tests del dominio | **22**, en verde, sin aparato | `cargo test` |
 | parámetros en el mapa | **239** (80 pista · 96 motor · 63 globales) | `python3 scripts/gen_nrpn.py` |
 | clippy | limpio con `-D warnings` | `cargo clippy --all-targets -- -D warnings` |
@@ -19,7 +20,19 @@ updated: 2026-11-11
 | líneas de Rust | 3.060 (incluye la tabla generada) | `find crates -name '*.rs' \| xargs wc -l` |
 | disco libre | 8,4 GB; `target/` 131 MB | `df -h /` |
 
-Lo que **no** está hecho: la app de UI (`fm1-perf`) todavía no existe. `fm1ctl` es la única entrega.
+Lo que **no** está hecho: persistencia de setlists en disco (M2) y reconciliación por el eco (M3). El set
+de la app es el de ejemplo en `app.rs` (`demo_setlist`), todavía no sale de un archivo.
+
+### La app en dos comandos
+
+```bash
+cargo run --profile fast -p fm1-perf                                  # la ventana
+cargo run --profile fast -p fm1-perf -- --shot shots/panel.png --demo  # captura y sale
+```
+
+Teclas: `1–6` disparar · `←→` elegir franja · `↑↓` mover valor (`shift` de a 8) · `±` tempo (`⌥` de a 5) ·
+`esc` pánico · `r` reconectar el sondeo. Las cuatro franjas son parámetros reales del mapa:
+`FILTER` de la pista 1 (id 5, bipolar), `DJ FILT` (global 17, bipolar), reverb `SIZE` (8) y `MIX` (7).
 
 ## Verificación sin ojos
 

@@ -1,5 +1,10 @@
 [workspace]
-members = ["crates/fm1-core", "crates/fm1-midi", "crates/fm1ctl"]
+members = [
+    "crates/fm1-core",
+    "crates/fm1-midi",
+    "crates/fm1ctl",
+    "crates/fm1-perf",
+]
 resolver = "2"
 
 [workspace.package]

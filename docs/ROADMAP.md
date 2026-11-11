@@ -16,16 +16,17 @@ Torre de tres capas, mapa NRPN generado, `fm1ctl` con `--dry`, puerta verde.
 
 **Salida:** `scripts/check.sh` verde y `fm1ctl bpm 140 --dry` imprimiendo los cuatro mensajes.
 
-## M1 — App de performance mínima (siguiente)
+## M1 — App de performance mínima (cerrado el 2026-11-11, con deuda)
 
-Ventana egui con: lista de setlist, disparo por teclado, indicador de conexión, y el estado del aparato
-(canal, identidad). Se reusan `theme.rs`/`ui.rs` de `candil` como capa de presentación.
+La ventana existe y dispara: setlist, cifra de sección, «siguiente», historial de envíos y cuatro
+parámetros reales del mapa. Tema «Ceniza» portado a `theme.rs`; verificación por captura
+(`shots/panel.png`, con `design/mock-panel.html` como referencia visual).
 
-**Fuera de alcance:** dibujar perillas animadas, espectro, grabación.
+**Salida (cumplida):** `fm1-perf --shot shots/panel.png --demo` genera la captura sin intervención, y con
+el aparato conectado `1–6` dispara secciones y proyectos.
 
-**Salida:** `cargo run --profile fast -p fm1-perf -- --shot out.png --screen setlist` genera una captura
-sin intervención (el patrón `--shot` de `candil`), y con el aparato conectado `section B` cambia de
-sección desde la ventana.
+**Deuda que pasa a M2:** el setlist es el de ejemplo en código, no un archivo; y el estado «sin aparato»
+todavía se reduce a un punto de color, sin deshabilitar lo que no puede funcionar.
 
 ## M2 — Persistencia y setlists reales
 

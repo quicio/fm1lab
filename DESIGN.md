@@ -20,12 +20,42 @@ decidido y lo que no se negocia.
 
 ## Tokens
 
+Tema primario **Ceniza** (oscuro, de escenario). Único acento: verde señal. Nada más tiene color: si algo
+no está activo o no es una advertencia, es gris o pelo de línea.
+
+| token | valor | uso |
+|---|---|---|
+| `ink` | `#07080A` | fondo de la ventana |
+| `panel` | `#0B0D10` | superficie de paneles |
+| `raise` | `#101317` | fila o control levantado (casi invisible) |
+| `line` | `rgba(233,237,242,.09)` | pelo de 1 px: separadores |
+| `line-2` | `rgba(233,237,242,.18)` | pelo de 1 px cuando marca estado |
+| `text` | `#E9EDF2` | texto principal |
+| `dim` | `#7D8691` | etiquetas y valores secundarios |
+| `dimmer` | `#4D545D` | números de paso, ayudas de teclado |
+| `signal` | `#C8F751` | **lo vivo**: paso actual, transporte, conexión, valor modificado |
+| `hot` | `#FF6B4A` | error o pánico; nunca decorativo |
+
+Reglas de composición:
+
+- **Pelo de 1 px, no cajas.** No hay sombras, no hay tarjetas anidadas, no hay esquinas redondeadas más
+  allá de 4 px. La jerarquía se hace con espacio y con líneas.
+- **Escala visible.** Una regla de marcas (ticks de 12 px y 60 px) arriba del cuerpo: es la única
+  decoración permitida, y es información de escala, no ornamento.
+- **Un solo acento.** `signal` aparece sólo en lo que está pasando ahora. Si todo brilla, nada brilla.
+- **Números tabulares** siempre (`font-variant-numeric: tabular-nums`), en monoespaciada, para que un
+  valor que cambia no mueva el layout.
+- **Cifra grande de estado.** La sección actual se dibuja con un glifo de 104 px y peso 200: es lo que se
+  lee desde el escenario, sin acercarse.
+
 | grupo | decisión |
 |---|---|
-| paletas | cinco presets como en `candil` (Papel, Noche, Claro, Ámbar, Contraste), reusando `theme.rs` |
-| radios | `SM`/`MD`/`LG` del sistema de `candil` (`theme::radius`) |
-| espacios | escala de `theme::space` (4/8/12/16/24) |
-| tipografía | tamaños de `theme::text` (`BODY`, `TITLE`, …) más un tamaño "escenario" para lo que se lee en vivo |
-| estados | `accent` para lo activo, `error` para lo que falta (aparato desconectado), sin colores nuevos |
+| paletas | **Ceniza** (primaria). Variantes futuras: `Ceniza · ámbar` (acento `#FFB020`) y `Papel` (claro) |
+| radios | `SM 2`, `MD 4`, `LG 8` px (más chico que `candil`: acá no hay tarjetas) |
+| espacios | 4 / 8 / 12 / 16 / 24 / 34 px |
+| tipografía | sans del sistema para texto; mono para cifras; etiquetas en mayúsculas con `letter-spacing .16em` y 9,5–10 px |
+| estados | `signal` = activo/enviado/escuchando · `hot` = falla · `dim` = inactivo · nunca un color nuevo |
 
-La tabla de valores concretos se copia de `candil/src/theme.rs` en M1, no se inventa acá.
+El mock ejecutable de este tema es `design/mock-panel.html` (referencia visual, no se compila). Al portar a
+egui, los valores de arriba van a `theme.rs` del crate de UI; los nombres de token no cambian.
+

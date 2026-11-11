@@ -28,6 +28,7 @@ infraestructura, adaptador MIDI aparte, UI egui.
 | [0003](adr/0003-midir-como-dependencia.md) | `midir` como única dependencia de transporte | aprobada |
 | [0004](adr/0004-mapa-nrpn-generado.md) | el mapa NRPN se genera desde el doc del firmware | aprobada |
 | [0005](adr/0005-openspec-fuente-de-verdad.md) | `openspec/` gobierna los cambios; `docs/` describe el estado | aprobada |
+| [0006](adr/0006-png-para-capturas.md) | `png` para la captura headless de `--shot` | aprobada |
 
 ## Specs
 
@@ -40,6 +41,9 @@ repo no mantiene un segundo árbol de specs: sería el error que `agent-handoff-
 crates/fm1-core/    dominio: nrpn (+ tabla generada), message, device, setlist, transport
 crates/fm1-midi/    adaptador midir/CoreMIDI
 crates/fm1ctl/      CLI (identidad, mensajes, intenciones, setlists, --dry)
+crates/fm1-perf/    panel de performance (egui): app, link, theme, panels, widgets
+design/             mock-panel.html — referencia visual del tema «Ceniza»
+shots/              capturas de --shot (evidencia del dibujo)
 scripts/            check.sh (la puerta), gen_nrpn.py (generador del mapa)
 docs/               esta documentación + NRPN.md + ADR
 openspec/           specs y cambios
