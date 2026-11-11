@@ -1,0 +1,35 @@
+schema: spec-driven
+
+# Project context (optional)
+# This is shown to AI when creating artifacts.
+context: |
+  fm1lab: app de escritorio liviana en Rust para operar un M-VAVE FM-1 en vivo.
+  Stack: workspace con fm1-core (dominio, sin I/O), fm1-midi (adaptador midir/CoreMIDI),
+  fm1ctl (CLI). La UI es egui/eframe 0.32 sin webview (ADR-0002).
+  Idioma: documentos en español; identificadores y nombres de API en inglés.
+  Reglas duras: las dependencias apuntan hacia fm1-core; ninguna dependencia sin ADR;
+  crates/fm1-core/src/nrpn_table.rs es generado (scripts/gen_nrpn.py) y no se edita a mano;
+  la puerta es scripts/check.sh (fmt + clippy -D warnings + tests + mapa al día + humo de bytes).
+  El aparato no manda ACK: la UI es optimista y reconcilia por el eco (MIDI OUT ALL).
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always include a "Non-goals" section
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing

@@ -1,0 +1,13 @@
+[package]
+name = "fm1ctl"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "CLI del M-VAVE FM-1: identidad, envío MIDI y setlists sin abrir la UI"
+
+[dependencies]
+fm1-core = { path = "../fm1-core" }
+fm1-midi = { path = "../fm1-midi" }
+
+[lints]
+workspace = true

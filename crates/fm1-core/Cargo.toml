@@ -1,0 +1,15 @@
+[package]
+name = "fm1-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Reglas del M-VAVE FM-1 sin infraestructura: mapa NRPN, mensajes y setlist"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1"
+
+[lints]
+workspace = true
