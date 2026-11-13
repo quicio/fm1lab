@@ -36,8 +36,8 @@ pub fn hex_digest(data: &[u8]) -> String {
     }
     tail.extend_from_slice(&bits.to_be_bytes());
 
-    for chunk in tail.chunks_exact(64) {
-        compress(&mut state, chunk);
+    for offset in (0..tail.len()).step_by(64) {
+        compress(&mut state, &tail[offset..offset + 64]);
     }
     state
         .iter()
@@ -60,8 +60,8 @@ pub fn hash_file(path: &Path) -> io::Result<String> {
         total += read as u64;
         pending.extend_from_slice(&buffer[..read]);
         let complete = pending.len() / 64 * 64;
-        for chunk in pending[..complete].chunks_exact(64) {
-            compress(&mut state, chunk);
+        for offset in (0..complete).step_by(64) {
+            compress(&mut state, &pending[offset..offset + 64]);
         }
         pending.drain(..complete);
     }
@@ -72,15 +72,16 @@ pub fn hash_file(path: &Path) -> io::Result<String> {
         pending.push(0);
     }
     pending.extend_from_slice(&bits.to_be_bytes());
-    for chunk in pending.chunks_exact(64) {
-        compress(&mut state, chunk);
+    for offset in (0..pending.len()).step_by(64) {
+        compress(&mut state, &pending[offset..offset + 64]);
     }
     Ok(state.iter().map(|word| format!("{word:08x}")).collect())
 }
 
 fn compress(state: &mut [u32; 8], chunk: &[u8]) {
     let mut w = [0u32; 64];
-    for (index, word) in chunk.chunks_exact(4).enumerate() {
+    for index in 0..16 {
+        let word = &chunk[index * 4..index * 4 + 4];
         w[index] = u32::from_be_bytes([word[0], word[1], word[2], word[3]]);
     }
     for index in 16..64 {
