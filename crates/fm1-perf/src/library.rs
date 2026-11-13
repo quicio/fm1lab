@@ -7,6 +7,7 @@
 use crate::theme;
 use eframe::egui;
 use eframe::egui::vec2;
+use fm1_core::route::{self, Family, PlanStep, Refusal, StepKind, Target};
 use fm1_store::{Catalog, FileState, FirmwareEntry, state_of};
 use std::collections::{BTreeMap, VecDeque};
 use std::sync::mpsc::{self, Receiver, Sender};
@@ -71,7 +72,24 @@ impl Library {
             rx,
         };
         library.rehash();
-        if !demo {
+        if demo {
+            // captura determinista: sin sondeo, pero con un aparato plausible y una entrada de otra
+            // familia seleccionada, para que la ruta de dos pasos quede dibujada
+            library.installed = Some("FM-1_9010202".to_string());
+            library.selected = library
+                .catalog
+                .entries
+                .iter()
+                .find(|entry| entry.id == "jiant-v10.7.23")
+                .or_else(|| {
+                    library
+                        .catalog
+                        .entries
+                        .iter()
+                        .find(|entry| Family::parse(&entry.family) != Family::X0x)
+                })
+                .map(|entry| entry.id.clone());
+        } else {
             library.probe();
         }
         library
@@ -198,48 +216,125 @@ impl Library {
                 }
             }
 
-            let path = entry.path();
-            let _ = tx.send(Msg::Line(format!("paquete: {}", path.display())));
-            let package = match fm1_flash::Package::load(&path, force) {
-                Ok(package) => package,
+            let installer = fm1_flash::Installer::new(None);
+            // La ruta se decide con lo que el aparato reporta ahora, no con el sondeo de hace un rato.
+            let current = match installer.probe() {
+                Ok((identity, port)) => {
+                    let _ = tx.send(Msg::Line(format!("aparato: {} ({port})", identity.text)));
+                    identity.text
+                }
                 Err(error) => {
                     let _ = tx.send(Msg::Flashed(Err(error.to_string())));
                     return;
                 }
             };
+            let catalog = Catalog::load();
+            let stock = catalog
+                .entries
+                .iter()
+                .find(|other| Family::parse(&other.family) == Family::Stock)
+                .cloned();
+            let target = Target::new(
+                entry.id.clone(),
+                entry.identity.clone(),
+                Family::parse(&entry.family),
+            );
+            let steps = match route::plan(
+                &current,
+                &target,
+                stock.as_ref().map(|other| other.identity.as_str()),
+            ) {
+                Ok(steps) => steps,
+                Err(refusal) => {
+                    let _ = tx.send(Msg::Flashed(Err(refusal.to_string())));
+                    return;
+                }
+            };
             let _ = tx.send(Msg::Line(format!(
-                "identidad del paquete: {} · {} bytes",
-                package.product,
-                package.image.len()
+                "ruta: {} paso(s) desde {current}",
+                steps.len()
             )));
 
-            let installer = fm1_flash::Installer::new(None);
-            let sender = tx.clone();
-            let flashed = installer.install(&package, &mut |event| match event {
-                fm1_flash::Event::Start(text) => {
-                    let _ = sender.send(Msg::Line(format!("handshake con {text}")));
+            for (index, step) in steps.iter().enumerate() {
+                let (path, step_force, what) = match step.kind {
+                    StepKind::Stock => match &stock {
+                        Some(other) => (other.path(), true, "oficial"),
+                        None => {
+                            let _ = tx.send(Msg::Flashed(Err(Refusal::NoStock.to_string())));
+                            return;
+                        }
+                    },
+                    StepKind::Target => (entry.path(), force, "destino"),
+                };
+                let _ = tx.send(Msg::Line(format!(
+                    "[{}/{}] {what}: {}",
+                    index + 1,
+                    steps.len(),
+                    path.display()
+                )));
+                let package = match fm1_flash::Package::load(&path, step_force) {
+                    Ok(package) => package,
+                    Err(error) => {
+                        let _ = tx.send(Msg::Flashed(Err(error.to_string())));
+                        return;
+                    }
+                };
+                let _ = tx.send(Msg::Line(format!(
+                    "identidad del paquete: {} · {} bytes",
+                    package.product,
+                    package.image.len()
+                )));
+                let sender = tx.clone();
+                let written = installer.install(&package, &mut |event| match event {
+                    fm1_flash::Event::Start(text) => {
+                        let _ = sender.send(Msg::Line(format!("handshake con {text}")));
+                    }
+                    fm1_flash::Event::Loader => {
+                        let _ = sender.send(Msg::Line("loader: modo update".into()));
+                    }
+                    fm1_flash::Event::Progress { end, total, .. } => {
+                        let _ = sender.send(Msg::Progress { end, total });
+                    }
+                    fm1_flash::Event::WriteDone => {
+                        let _ = sender.send(Msg::Line("escritura completa".into()));
+                    }
+                    fm1_flash::Event::Reboot => {
+                        let _ = sender.send(Msg::Line("reiniciando…".into()));
+                    }
+                    fm1_flash::Event::Done(text) => {
+                        let _ = sender.send(Msg::Line(format!("verificado: {text}")));
+                    }
+                });
+                match written {
+                    Ok(identity) if identity.text == step.expect => {
+                        let _ = tx.send(Msg::Line(format!(
+                            "paso {} ok: {}",
+                            index + 1,
+                            identity.text
+                        )));
+                    }
+                    Ok(identity) => {
+                        let _ = tx.send(Msg::Flashed(Err(format!(
+                            "después del paso {} el aparato dice {}, se esperaba {}",
+                            index + 1,
+                            identity.text,
+                            step.expect
+                        ))));
+                        return;
+                    }
+                    Err(error) => {
+                        let _ = tx.send(Msg::Flashed(Err(error.to_string())));
+                        return;
+                    }
                 }
-                fm1_flash::Event::Loader => {
-                    let _ = sender.send(Msg::Line("loader: modo update".into()));
-                }
-                fm1_flash::Event::Progress { end, total, .. } => {
-                    let _ = sender.send(Msg::Progress { end, total });
-                }
-                fm1_flash::Event::WriteDone => {
-                    let _ = sender.send(Msg::Line("escritura completa".into()));
-                }
-                fm1_flash::Event::Reboot => {
-                    let _ = sender.send(Msg::Line("reiniciando…".into()));
-                }
-                fm1_flash::Event::Done(text) => {
-                    let _ = sender.send(Msg::Line(format!("verificado: {text}")));
-                }
-            });
-            let _ = tx.send(Msg::Flashed(
-                flashed
-                    .map(|identity| identity.text)
-                    .map_err(|error| error.to_string()),
-            ));
+            }
+            if steps.len() > 1 {
+                let _ = tx.send(Msg::Line(
+                    "nota: los proyectos del firmware anterior se perdieron al pasar por el oficial"
+                        .into(),
+                ));
+            }
+            let _ = tx.send(Msg::Flashed(Ok(entry.identity.clone())));
         });
     }
 
@@ -301,6 +396,29 @@ impl Library {
             }
         }
         status
+    }
+
+    /// La ruta segura para esta entrada, o el motivo por el que no se escribe. `None` sin sondeo.
+    fn planned(
+        &self,
+        entry: &FirmwareEntry,
+    ) -> Option<std::result::Result<Vec<PlanStep>, Refusal>> {
+        let current = self.installed.as_deref()?;
+        let target = Target::new(
+            entry.id.clone(),
+            entry.identity.clone(),
+            Family::parse(&entry.family),
+        );
+        let stock = self
+            .catalog
+            .entries
+            .iter()
+            .find(|other| Family::parse(&other.family) == Family::Stock);
+        Some(route::plan(
+            current,
+            &target,
+            stock.map(|other| other.identity.as_str()),
+        ))
     }
 
     /// El nombre del firmware instalado, si el catálogo lo reconoce por identidad.
@@ -561,6 +679,60 @@ impl Library {
                                         );
                                     }
 
+                                    // La ruta va antes que el botón: si no se puede, no hay botón.
+                                    let planned = self.planned(&entry);
+                                    if let Some(plan) = &planned {
+                                        ui.add_space(6.0);
+                                        match plan {
+                                            Ok(steps) => {
+                                                ui.label(
+                                                    egui::RichText::new(theme::tracked(&format!(
+                                                        "ruta · {} paso{}",
+                                                        steps.len(),
+                                                        if steps.len() == 1 { "" } else { "s" }
+                                                    )))
+                                                    .size(9.5)
+                                                    .color(theme::DIMMER),
+                                                );
+                                                for (index, step) in steps.iter().enumerate() {
+                                                    let what = match step.kind {
+                                                        StepKind::Stock => "oficial",
+                                                        StepKind::Target => "destino",
+                                                    };
+                                                    ui.label(
+                                                        egui::RichText::new(format!(
+                                                            "{}. {what}: espera {}\n     {}",
+                                                            index + 1,
+                                                            step.expect,
+                                                            step.reason
+                                                        ))
+                                                        .size(10.5)
+                                                        .color(theme::DIM),
+                                                    );
+                                                }
+                                                if steps.len() > 1 {
+                                                    ui.label(
+                                                        egui::RichText::new(
+                                                            "se pierde: los proyectos y presets del firmware actual",
+                                                        )
+                                                        .size(10.5)
+                                                        .color(theme::HOT),
+                                                    );
+                                                }
+                                            }
+                                            Err(refusal) => {
+                                                ui.label(
+                                                    egui::RichText::new(format!(
+                                                        "no se puede: {refusal}"
+                                                    ))
+                                                    .size(10.5)
+                                                    .color(theme::HOT),
+                                                );
+                                            }
+                                        }
+                                    }
+                                    let blocked = matches!(planned, Some(Err(_)));
+
                                     ui.add_space(8.0);
                                     ui.add_enabled_ui(ready && self.busy.is_none(), |ui| {
                                         ui.checkbox(
@@ -573,7 +745,7 @@ impl Library {
                                         );
                                         if ui
                                             .add_enabled(
-                                                self.confirm,
+                                                self.confirm && !blocked,
                                                 egui::Button::new(if installed {
                                                     "reinstalar"
                                                 } else {

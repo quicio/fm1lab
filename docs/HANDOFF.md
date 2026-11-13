@@ -274,6 +274,10 @@ se pierde: los proyectos y presets del firmware actual
 - `route` corre sin escribir y acepta `--from IDENT` para ensayar sin aparato.
 - Se verificó contra el aparato real: `route stock-v16` da 1 paso, `route x0x-1.2.2` se niega («ya reporta
   FM-1_9010202»), `route jiant-v10.7.23` y `route sloop-2.8.5` dan 2 pasos.
+- La **biblioteca de la UI** (`fm1-perf`, tecla `f`) muestra la misma ruta antes del botón: pasos, identidad
+  esperada y el aviso de qué se pierde; si la ruta se niega, el botón queda deshabilitado. Instalar desde ahí
+  corre exactamente los mismos pasos y verifica la identidad después de cada uno. En `--demo` la captura
+  preselecciona una entrada de otra familia para que la ruta de dos pasos se vea.
 - La identidad corta de X0X (`FM-1_901`) tiene su propio caso de test: sin eso, un aparato en X0X parece un
   firmware desconocido y la ruta sale por el oficial cuando no hacía falta.
 
