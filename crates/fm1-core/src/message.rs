@@ -8,6 +8,13 @@ use crate::{Error, Result};
 /// Handshake de identidad del actualizador (lectura pura: no escribe nada en el aparato).
 pub const IDENTITY_REQUEST: [u8; 10] = [0xF0, 0x00, 0x32, 0x45, 0x00, 0x00, 0x00, 0x40, 0x7F, 0xF7];
 
+/// Realtime: arranca el transporte desde el paso cero.
+pub const START: [u8; 1] = [0xFA];
+/// Realtime: para el transporte.
+pub const STOP: [u8; 1] = [0xFC];
+/// Realtime: un pulso de clock (24 por negra).
+pub const CLOCK: [u8; 1] = [0xF8];
+
 /// Cambio de control: CC `ctrl` = `value` en `channel` (1..=16).
 pub fn cc(channel: u8, ctrl: u8, value: u8) -> Result<[u8; 3]> {
     let status = status(0xB0, channel)?;

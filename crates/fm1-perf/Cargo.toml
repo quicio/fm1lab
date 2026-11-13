@@ -7,7 +7,9 @@ description = "Panel de performance para el M-VAVE FM-1 (egui, sin webview)"
 
 [dependencies]
 fm1-core = { path = "../fm1-core" }
+fm1-flash = { path = "../fm1-flash" }
 fm1-midi = { path = "../fm1-midi" }
+fm1-store = { path = "../fm1-store" }
 # Pin de ADR-0002: 0.37 es una reescritura. Sin features de sistema que no usamos.
 eframe = { version = "0.32", default-features = false, features = [
     "default_fonts",

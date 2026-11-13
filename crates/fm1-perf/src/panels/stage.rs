@@ -1,6 +1,7 @@
 //! El escenario: qué está sonando, qué viene, el transporte y las cuatro franjas.
 
 use crate::app::PerfApp;
+use crate::link::Link;
 use crate::theme;
 use crate::widgets::{StripView, strip, text, text_right};
 use eframe::egui::{self, Align2, Rect, Ui, pos2, vec2};
@@ -9,39 +10,65 @@ pub fn draw(app: &mut PerfApp, ui: &mut Ui, rect: Rect) {
     let left = rect.left() + 34.0;
     let right = rect.right() - 34.0;
 
-    // ── cifra grande: la sección, que es lo que se lee de lejos ──
+    // ── cabecera: sección (con escenas) o perfil (sin escenas) ──
     let glyph_base = rect.top() + 122.0;
-    let letter = app.current_letter();
-    ui.painter().text(
-        pos2(left, glyph_base),
-        Align2::LEFT_BOTTOM,
-        letter.to_string(),
-        theme::glyph_font(),
-        theme::SIGNAL,
-    );
-    let glyph_w = ui
-        .painter()
-        .layout_no_wrap(letter.to_string(), theme::glyph_font(), theme::SIGNAL)
-        .size()
-        .x;
+    let scenes = app.has_scenes();
+    if scenes {
+        let letter = app.current_letter();
+        ui.painter().text(
+            pos2(left, glyph_base),
+            Align2::LEFT_BOTTOM,
+            letter.to_string(),
+            theme::glyph_font(),
+            theme::SIGNAL,
+        );
+        let glyph_w = ui
+            .painter()
+            .layout_no_wrap(letter.to_string(), theme::glyph_font(), theme::SIGNAL)
+            .size()
+            .x;
+        text(
+            ui,
+            pos2(left + glyph_w + 20.0, glyph_base - 46.0),
+            &theme::tracked(&app.current_project()),
+            egui::FontId::new(12.0, egui::FontFamily::Proportional),
+            theme::DIM,
+        );
+        text(
+            ui,
+            pos2(left + glyph_w + 20.0, glyph_base - 28.0),
+            &app.current_subline(),
+            theme::mono(11.0),
+            theme::DIMMER,
+        );
+    } else {
+        // Sin escenas no hay “canción”: el perfil y cuántos parámetros expone es la cabecera.
+        text(
+            ui,
+            pos2(left, glyph_base - 46.0),
+            &theme::tracked(&app.profile.name),
+            egui::FontId::new(12.0, egui::FontFamily::Proportional),
+            theme::TEXT,
+        );
+        text(
+            ui,
+            pos2(left, glyph_base - 28.0),
+            &format!(
+                "{} params · {} franjas · {}",
+                app.profile.params.len(),
+                app.strips.len(),
+                if app.link == Link::Absent {
+                    "sin aparato"
+                } else {
+                    "MIDI listo"
+                }
+            ),
+            theme::mono(11.0),
+            theme::DIMMER,
+        );
+    }
 
-    // ── al lado: qué proyecto y cuándo se mandó ──
-    text(
-        ui,
-        pos2(left + glyph_w + 20.0, glyph_base - 46.0),
-        &theme::tracked(&app.current_project()),
-        egui::FontId::new(12.0, egui::FontFamily::Proportional),
-        theme::DIM,
-    );
-    text(
-        ui,
-        pos2(left + glyph_w + 20.0, glyph_base - 28.0),
-        &app.current_subline(),
-        theme::mono(11.0),
-        theme::DIMMER,
-    );
-
-    // ── transporte: el del aparato, no el nuestro ──
+    // ── transporte: lo maneja la app cuando manda el reloj ──
     text_right(
         ui,
         pos2(right, glyph_base - 46.0),
@@ -52,52 +79,63 @@ pub fn draw(app: &mut PerfApp, ui: &mut Ui, rect: Rect) {
     text_right(
         ui,
         pos2(right, glyph_base - 28.0),
-        "en el aparato",
+        if app.playing {
+            "PLAY · reloj app"
+        } else {
+            "parado"
+        },
         theme::mono(10.0),
-        theme::DIM,
+        if app.playing {
+            theme::SIGNAL
+        } else {
+            theme::DIM
+        },
     );
     let bar = Rect::from_min_size(pos2(right - 132.0, glyph_base - 14.0), vec2(132.0, 1.0));
     ui.painter().rect_filled(bar, 0.0, theme::LINE_2);
 
-    // ── qué viene, y dónde estamos dentro del set ──
-    let cue_y = glyph_base + 36.0;
-    text(
-        ui,
-        pos2(left, cue_y),
-        &theme::tracked("siguiente"),
-        theme::label_font(),
-        theme::DIMMER,
-    );
-    let next_x = left + 78.0;
-    match app.next_label() {
-        Some(label) => text(
+    // ── qué viene, y dónde estamos dentro del set (sólo con escenas) ──
+    let mut y;
+    if scenes {
+        let cue_y = glyph_base + 36.0;
+        text(
             ui,
-            pos2(next_x, cue_y),
-            &label,
-            egui::FontId::new(13.0, egui::FontFamily::Proportional),
-            theme::DIM,
-        ),
-        None => text(
-            ui,
-            pos2(next_x, cue_y),
-            "fin del set",
-            theme::mono(11.0),
+            pos2(left, cue_y),
+            &theme::tracked("siguiente"),
+            theme::label_font(),
             theme::DIMMER,
-        ),
+        );
+        let next_x = left + 78.0;
+        match app.next_label() {
+            Some(label) => text(
+                ui,
+                pos2(next_x, cue_y),
+                &label,
+                egui::FontId::new(13.0, egui::FontFamily::Proportional),
+                theme::DIM,
+            ),
+            None => text(
+                ui,
+                pos2(next_x, cue_y),
+                "fin del set",
+                theme::mono(11.0),
+                theme::DIMMER,
+            ),
+        }
+
+        // dónde estamos dentro del set: un número, no una fila de guiones que hay que interpretar
+        let total = app.setlist.len().max(1);
+        text_right(
+            ui,
+            pos2(right, cue_y),
+            &format!("{:02} / {:02}", app.current + 1, total),
+            theme::mono(10.0),
+            theme::DIMMER,
+        );
+        y = cue_y + 44.0;
+    } else {
+        y = glyph_base + 36.0;
     }
-
-    // dónde estamos dentro del set: un número, no una fila de guiones que hay que interpretar
-    let total = app.setlist.len().max(1);
-    text_right(
-        ui,
-        pos2(right, cue_y),
-        &format!("{:02} / {:02}", app.current + 1, total),
-        theme::mono(10.0),
-        theme::DIMMER,
-    );
-
-    // ── historial: qué se mandó y hace cuánto. Es la memoria de la sesión ──
-    let mut y = cue_y + 44.0;
     crate::widgets::hline(ui, left, right, y - 16.0, theme::LINE);
     text(
         ui,

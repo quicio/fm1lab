@@ -33,16 +33,23 @@ fn visuals_dark() -> Visuals {
     let mut v = Visuals::dark();
     v.panel_fill = INK;
     v.window_fill = INK;
-    v.extreme_bg_color = PANEL;
+    v.extreme_bg_color = INK;
     v.faint_bg_color = PANEL;
     v.selection.bg_fill = SIGNAL.linear_multiply(0.22);
     v.selection.stroke = Stroke::new(1.0, SIGNAL);
+    v.hyperlink_color = SIGNAL;
     v.widgets.noninteractive.bg_stroke = Stroke::new(1.0, LINE);
+    v.widgets.noninteractive.weak_bg_fill = PANEL;
     v.widgets.inactive.bg_fill = PANEL;
+    v.widgets.inactive.weak_bg_fill = PANEL;
     v.widgets.inactive.fg_stroke = Stroke::new(1.0, DIM);
-    v.widgets.hovered.bg_fill = PANEL;
+    v.widgets.inactive.bg_stroke = Stroke::new(1.0, LINE_2);
+    v.widgets.hovered.bg_fill = LINE;
+    v.widgets.hovered.weak_bg_fill = LINE;
     v.widgets.hovered.fg_stroke = Stroke::new(1.0, TEXT);
-    v.widgets.active.bg_fill = PANEL;
+    v.widgets.hovered.bg_stroke = Stroke::new(1.0, LINE_2);
+    v.widgets.active.bg_fill = LINE_2;
+    v.widgets.active.weak_bg_fill = LINE_2;
     v.widgets.active.fg_stroke = Stroke::new(1.0, SIGNAL);
     v
 }

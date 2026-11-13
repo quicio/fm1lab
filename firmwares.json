@@ -1,0 +1,192 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "x0x-1.2.2",
+      "name": "X0X 1.2.2",
+      "version": "1.2.2",
+      "family": "x0x",
+      "identity": "FM-1_9010202",
+      "file": "x0x-1.2.2.fwsc",
+      "sha256": "bbe601bc260e54f7109e54821e200f17a11ddba8fcce0bb2b612d72eaf448dd3",
+      "tags": [
+        "techno",
+        "acid",
+        "909",
+        "808",
+        "303",
+        "secuenciador"
+      ],
+      "notes": "Caja de ritmos: 909 en canal 10, 808 en 11, 303A/303B en 2/3 y break en 4. Sigue el clock externo sola. Perfil x0x-1.2 con 112 CC.",
+      "profile": "x0x-1.2",
+      "url": "https://github.com/charlesvestal/fm1-x0x/releases"
+    },
+    {
+      "id": "jiant-par12",
+      "name": "JIANT 0.9.9 par12",
+      "version": "0.9.9",
+      "family": "jiant",
+      "identity": "FM-1_909",
+      "file": "jiant-felucca-v0.9.9-par12-527c7e4.fwsc",
+      "sha256": "c338c5bd32a2e79192fc15ff916e8d074ca2a3187f719881b7a4769b92af311c",
+      "tags": [
+        "performance",
+        "proyectos",
+        "editor",
+        "par12"
+      ],
+      "notes": "Firmware de performance con secciones, proyectos, cadena de song y reloj USB. No implementa NRPN: la app usa su editor SysEx. Perfil jiant-par12.",
+      "profile": "jiant-par12"
+    },
+    {
+      "id": "jiant-gen2",
+      "name": "JIANT 0.9.9 gen2",
+      "version": "0.9.9",
+      "family": "jiant",
+      "identity": "FM-1_909",
+      "file": "jiant-felucca-v0.9.9-gen2-fe81db8.fwsc",
+      "sha256": "a07ff58ccd7fe1be45369fe9f88501f294863501007395726e8e33a416c2f9ba",
+      "tags": [
+        "performance",
+        "proyectos",
+        "editor",
+        "gen2"
+      ],
+      "notes": "Variante gen2 de JIANT par12. Reporta la misma identidad OTA que par12, así que la app no puede distinguirlos en runtime: elegí el paquete por el nombre.",
+      "profile": "jiant-par12"
+    },
+    {
+      "id": "fm1-dock-0.8",
+      "name": "FM-1 dock 0.8",
+      "version": "0.8",
+      "family": "dock",
+      "identity": "FM-1_921",
+      "file": "fm1-dock-0.8.fwsc",
+      "sha256": "ed5d8c0330e87959b01fd8b6716c13d181eebf369e8820175f8a8470bf1545d6",
+      "tags": [
+        "dock",
+        "felucca",
+        "alternativo"
+      ],
+      "notes": "Firmware dock de Felucca. Sin perfil propio: cae en generic.",
+      "profile": "generic"
+    },
+    {
+      "id": "stock-v16",
+      "name": "FM-1 stock V16",
+      "version": "16",
+      "family": "stock",
+      "identity": "FM-1_016",
+      "file": "fm1-stock-official.fwsc",
+      "sha256": "d017fb65e70aca97ee29d944470c3515a74581df5c0576bf70de917c7b2b61d5",
+      "tags": [
+        "stock",
+        "oficial",
+        "vuelta-atras"
+      ],
+      "notes": "Firmware oficial de fábrica. No trae el loader de Felucca: instalar desde la app exige --force o M-UPGRADE. Es el paquete de vuelta atrás.",
+      "profile": "generic"
+    },
+    {
+      "id": "jiant-v10.7.23",
+      "name": "JIANT V10.7.23",
+      "version": "10.7.23",
+      "family": "jiant",
+      "identity": "FM-1_909",
+      "file": "jiant-felucca-V10.7.23.fwsc",
+      "sha256": "a806547e2f735a336faa1e8bd318e75629f6c19a287c48c3d5d794b75feb98f0",
+      "tags": [
+        "performance",
+        "11 motores",
+        "velocity",
+        "generador",
+        "public"
+      ],
+      "notes": "La pública más nueva del changelog (V10.7.18–21 eran beta). 6 canciones: las 7 y 8 dejan de abrir y rechaza proyectos guardados antes de 1.0.3. Implementa NRPN, así que el perfil todavía es genérico.",
+      "profile": "generic",
+      "url": "https://juanjiant-bit.github.io/JIANT/"
+    },
+    {
+      "id": "jiant-v10.7.17",
+      "name": "JIANT V10.7.17",
+      "version": "10.7.17",
+      "family": "jiant",
+      "identity": "FM-1_909",
+      "file": "jiant-felucca-V10.7.17.fwsc",
+      "sha256": "1f097f9d2543d2e1bafa566cb6e7d405a87fb857336d519c5a90adde58a0e777",
+      "tags": [
+        "performance",
+        "respaldo"
+      ],
+      "notes": "La anterior pública de la línea V10; queda como rollback de la misma familia.",
+      "profile": "generic"
+    },
+    {
+      "id": "sloop-2.8.5",
+      "name": "SLOOP 2.8.5",
+      "version": "2.8.5",
+      "family": "sloop",
+      "identity": "FM-1_900",
+      "file": "sloop-2.8.5.fwsc",
+      "sha256": "b0446effb840740a3aa5c386ce004e79334e4f833d48d82a9eb5edbfde92ae67",
+      "tags": [
+        "groovebox",
+        "en vivo",
+        "patrones"
+      ],
+      "notes": "Groovebox en vivo, el más popular de la escena; de acá JIANT tomó el sistema de canciones.",
+      "profile": "generic",
+      "url": "https://github.com/isod89/sloop-fm1/releases"
+    },
+    {
+      "id": "ctl-1.0.3",
+      "name": "CTL-1 1.0.3",
+      "version": "1.0.3",
+      "family": "ctl",
+      "identity": "FM-1_6010003",
+      "file": "ctl-1.0.3.fwsc",
+      "sha256": "1ecf7e3c2af255c7f404fa6232e9a55cdbaaf3e60cc1c549e14ecd310f7d5104",
+      "tags": [
+        "controlador",
+        "general midi",
+        "escalas"
+      ],
+      "notes": "Convierte el FM-1 en controlador MIDI con sonidos General MIDI: la otra cara del mismo cable.",
+      "profile": "generic",
+      "url": "https://github.com/charlesvestal/fm1-ctl/releases"
+    },
+    {
+      "id": "felucca-1.8.2",
+      "name": "Felucca 1.8.2",
+      "version": "1.8.2",
+      "family": "felucca",
+      "identity": "FM-1_918",
+      "file": "felucca-1.8.2.fwsc",
+      "sha256": "770ea7c756088d08ac59a193f1ae78126476c3c8251a86938c837ead5ab0048a",
+      "tags": [
+        "upstream",
+        "referencia"
+      ],
+      "notes": "El upstream de casi todos los forks: útil como referencia de comportamiento.",
+      "profile": "generic",
+      "url": "https://github.com/hugelton/Felucca/releases"
+    },
+    {
+      "id": "sidou-1.9.0",
+      "name": "sidou 1.9.0",
+      "version": "1.9.0",
+      "family": "sidou",
+      "identity": "FM-1_964",
+      "file": "sidou-1.9.0.fwsc",
+      "sha256": "f88bbead3178fcd3894a67f45d262d2009c812eb32e87ed3474711887390d445",
+      "tags": [
+        "sid",
+        "c64",
+        "chiptune"
+      ],
+      "notes": "Máquina de SID: reproduce .sid de la HVSC y trae el editor de GoatTracker 2.",
+      "profile": "generic",
+      "url": "https://github.com/dsablic/sidou/releases"
+    }
+  ]
+}

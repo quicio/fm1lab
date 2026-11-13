@@ -7,7 +7,9 @@ description = "CLI del M-VAVE FM-1: identidad, envío MIDI y setlists sin abrir 
 
 [dependencies]
 fm1-core = { path = "../fm1-core" }
+fm1-flash = { path = "../fm1-flash" }
 fm1-midi = { path = "../fm1-midi" }
+fm1-store = { path = "../fm1-store" }
 
 [lints]
 workspace = true

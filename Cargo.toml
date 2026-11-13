@@ -2,6 +2,8 @@
 members = [
     "crates/fm1-core",
     "crates/fm1-midi",
+    "crates/fm1-store",
+    "crates/fm1-flash",
     "crates/fm1ctl",
     "crates/fm1-perf",
 ]

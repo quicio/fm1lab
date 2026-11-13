@@ -1,0 +1,14 @@
+[package]
+name = "fm1-store"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Persistencia del setlist del FM-1: JSON versionado y escritura atómica"
+
+[dependencies]
+fm1-core = { path = "../fm1-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[lints]
+workspace = true

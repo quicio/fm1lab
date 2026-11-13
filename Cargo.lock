@@ -733,6 +733,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "fm1-flash"
+version = "0.1.0"
+dependencies = [
+ "fm1-core",
+ "fm1-midi",
+]
+
+[[package]]
 name = "fm1-midi"
 version = "0.1.0"
 dependencies = [
@@ -747,8 +755,19 @@ dependencies = [
  "eframe",
  "egui",
  "fm1-core",
+ "fm1-flash",
  "fm1-midi",
+ "fm1-store",
  "png 0.17.16",
+]
+
+[[package]]
+name = "fm1-store"
+version = "0.1.0"
+dependencies = [
+ "fm1-core",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -756,7 +775,9 @@ name = "fm1ctl"
 version = "0.1.0"
 dependencies = [
  "fm1-core",
+ "fm1-flash",
  "fm1-midi",
+ "fm1-store",
 ]
 
 [[package]]

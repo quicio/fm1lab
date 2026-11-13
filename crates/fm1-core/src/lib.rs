@@ -8,14 +8,19 @@
 //! un trait de `transport` y la implementación queda afuera.
 
 pub mod device;
+pub mod editor;
 pub mod message;
 pub mod nrpn;
 mod nrpn_table;
+pub mod profile;
+pub mod route;
 pub mod setlist;
 pub mod transport;
 
 pub use device::Device;
+pub use editor::Clock;
 pub use nrpn::{EngineParamSpec, ParamSpec, Scope};
+pub use profile::{Param, ParamAccess, Profile};
 pub use setlist::{Item, Setlist};
 
 /// Error de la capa de dominio. Nunca describe un puerto ni un archivo: eso es del adaptador.

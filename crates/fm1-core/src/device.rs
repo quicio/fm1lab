@@ -7,7 +7,7 @@ use crate::message::{self, IDENTITY_REQUEST};
 use crate::nrpn::{self, SONG_CHANNEL, Scope};
 use crate::setlist::Item;
 use crate::transport::{MidiIn, MidiOut};
-use crate::{Error, Result};
+use crate::{Error, Result, editor};
 use std::time::Duration;
 
 /// Una sección de la canción. En el canal 16 es un Program Change de 0 a 3.
@@ -60,9 +60,61 @@ impl<O: MidiOut> Device<O> {
         &self.out
     }
 
-    /// Tempo del aparato (global BPM, 40..240), por NRPN en el canal de la canción.
+    /// Tempo del aparato (global BPM, 40..240) por el editor protocol.
+    ///
+    /// Va por el editor y no por NRPN porque el firmware 0.9.9 no implementa NRPN: los CC99/98/6/38
+    /// sólo cancelan el RPN. El id y el rango son los del mapa; el valor va crudo en offset binary.
     pub fn set_bpm(&mut self, bpm: i16) -> Result<()> {
-        self.set_global("BPM", bpm)
+        self.set_global_editor(editor::BPM_GLOBAL, bpm)
+    }
+
+    /// Un global por id, por el editor protocol (el camino que el firmware sí implementa).
+    pub fn set_global_editor(&mut self, id: u8, value: i16) -> Result<()> {
+        let spec = nrpn::by_id(Scope::Global, id)
+            .ok_or_else(|| Error::Param(format!("no existe el global id {id}")))?;
+        if value < spec.min || value > spec.max {
+            return Err(Error::Param(format!(
+                "{} = {value} fuera de {}..{}",
+                spec.name, spec.min, spec.max
+            )));
+        }
+        self.emit(&editor::set(Scope::Global, id, value))
+    }
+
+    /// Un parámetro de la pista seleccionada, por el editor protocol.
+    ///
+    /// La pista la elige el aparato: esto no dice "pista 1", dice "la que está seleccionada". La UI
+    /// lee cuál es con `TRACK` y lo muestra.
+    pub fn set_selected_track(&mut self, id: u8, value: i16) -> Result<()> {
+        let spec = nrpn::by_id(Scope::Track, id)
+            .ok_or_else(|| Error::Param(format!("no existe el parámetro de pista {id}")))?;
+        if value < spec.min || value > spec.max {
+            return Err(Error::Param(format!(
+                "{} = {value} fuera de {}..{}",
+                spec.name, spec.min, spec.max
+            )));
+        }
+        self.emit(&editor::set(Scope::Track, id, value))
+    }
+
+    /// Pone la fuente de reloj del aparato (por el editor protocol, no por NRPN).
+    pub fn set_clock(&mut self, clock: editor::Clock) -> Result<()> {
+        self.emit(&editor::clock_set(clock))
+    }
+
+    /// Arranca el transporte. Sólo lo atiende el firmware si el reloj es USB o TRS.
+    pub fn start(&mut self) -> Result<()> {
+        self.emit(&message::START)
+    }
+
+    /// Para el transporte.
+    pub fn stop(&mut self) -> Result<()> {
+        self.emit(&message::STOP)
+    }
+
+    /// Un pulso de clock (24 por negra).
+    pub fn pulse(&mut self) -> Result<()> {
+        self.emit(&message::CLOCK)
     }
 
     /// Un global por nombre (`BPM`, `SWING`, `DJ FILT`, `SIZE`, …), con el rango validado contra el mapa.
@@ -183,18 +235,31 @@ mod tests {
     }
 
     #[test]
-    fn el_tempo_sale_como_nrpn_global_en_el_canal_de_la_cancion() {
+    fn el_tempo_va_por_el_editor_en_offset_binary() {
         let mut d = device();
         d.set_bpm(140).unwrap();
         assert_eq!(
             d.out().sent,
-            vec![
-                vec![0xBF, 0x63, 0x01],
-                vec![0xBF, 0x62, 0x00],
-                vec![0xBF, 0x06, 0x40],
-                vec![0xBF, 0x26, 0x00], // 8192 de 16383: 140 BPM sobre el rango 40..240
-            ]
+            vec![vec![0xF0, 0x7D, 0x46, 0x4C, 3, 1, 0, 0x0C, 0x41, 0xF7]]
         );
+        assert!(d.set_bpm(300).is_err(), "el rango del mapa se valida");
+    }
+
+    #[test]
+    fn los_parametros_del_panel_van_por_el_editor_con_su_id_y_rango() {
+        let mut d = device();
+        d.set_global_editor(8, 91).unwrap(); // SIZE
+        assert_eq!(
+            d.out().last(),
+            Some(&[0xF0, 0x7D, 0x46, 0x4C, 3, 1, 8, 0x5B, 0x40, 0xF7][..])
+        );
+        d.set_selected_track(5, 10).unwrap(); // FILTER de la pista seleccionada
+        assert_eq!(
+            d.out().last(),
+            Some(&[0xF0, 0x7D, 0x46, 0x4C, 3, 0, 5, 0x0A, 0x40, 0xF7][..])
+        );
+        assert!(d.set_selected_track(5, 200).is_err());
+        assert!(d.set_global_editor(200, 0).is_err());
     }
 
     #[test]
@@ -232,5 +297,23 @@ mod tests {
         let mut d = device();
         assert!(d.set_global("NO EXISTE", 1).is_err());
         assert!(d.out().sent.is_empty(), "no debe mandar nada a medias");
+    }
+
+    #[test]
+    fn el_reloj_y_el_transporte_son_los_bytes_del_contrato() {
+        let mut d = device();
+        d.set_clock(editor::Clock::Usb).unwrap();
+        assert_eq!(
+            d.out().last(),
+            Some(&[0xF0, 0x7D, 0x46, 0x4C, 3, 1, 2, 0x01, 0x40, 0xF7][..])
+        );
+        d.start().unwrap();
+        d.pulse().unwrap();
+        d.stop().unwrap();
+        assert_eq!(
+            d.out().sent[1..],
+            [vec![0xFA], vec![0xF8], vec![0xFC]],
+            "start, pulso de clock, stop"
+        );
     }
 }

@@ -28,7 +28,8 @@ pub struct EngineParamSpec {
 }
 
 /// Qué espacio de parámetros se direcciona: el CC99 que precede al CC98.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Scope {
     Track,
     Global,

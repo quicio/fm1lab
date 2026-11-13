@@ -1,0 +1,13 @@
+[package]
+name = "fm1-flash"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Instalador OTA/Felucca para el M-VAVE FM-1: paquete .fwsc, handshake y escritura por USB-MIDI"
+
+[dependencies]
+fm1-core = { path = "../fm1-core" }
+fm1-midi = { path = "../fm1-midi" }
+
+[lints]
+workspace = true

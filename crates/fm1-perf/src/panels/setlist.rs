@@ -88,10 +88,15 @@ pub fn draw(app: &mut PerfApp, ui: &mut Ui, rect: Rect) {
     }
 
     if items.is_empty() {
+        let message = if app.has_scenes() {
+            "sin pasos · el aparato no tiene secciones guardadas · r relee"
+        } else {
+            "sin pasos · este perfil no declara escenas"
+        };
         text(
             ui,
             pos2(rect.left() + 30.0, rect.top() + 80.0),
-            "sin pasos · el set vacío se edita desde el archivo",
+            message,
             theme::mono(10.0),
             theme::DIMMER,
         );

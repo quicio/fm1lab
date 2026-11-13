@@ -49,10 +49,15 @@ pub fn header(app: &PerfApp, ui: &Ui, rect: Rect) {
         theme::mono(11.0),
         theme::TEXT,
     );
+    let line = if app.has_scenes() {
+        format!("· ch 16 · clock {} · midi out all", app.clock.name())
+    } else {
+        format!("· {}", app.profile.name)
+    };
     text(
         ui,
         pos2(stat_x + 12.0 + 96.0, base),
-        "· ch 16 · midi out all",
+        &line,
         theme::mono(11.0),
         theme::DIM,
     );
@@ -87,20 +92,57 @@ pub fn hline_below(ui: &Ui, rect: Rect) {
 pub fn footer(app: &PerfApp, ui: &Ui, rect: Rect) {
     let base = rect.top() + rect.height() / 2.0 + 4.0;
     let mut x = rect.left() + 30.0;
-    for (key, action) in [
-        ("1–6", "disparar"),
-        ("←→", "control"),
-        ("↑↓", "valor"),
+    // a la derecha: qué pasó con el último envío, o el aviso de que no hay ack
+    let msg = match &app.status {
+        Some(line) => line.clone(),
+        None => "sin ack · estado optimista".to_string(),
+    };
+    let color = if app.error { theme::HOT } else { theme::DIMMER };
+    let msg_w = ui
+        .painter()
+        .layout_no_wrap(msg.clone(), theme::mono(10.0), color)
+        .size()
+        .x;
+    let limit = rect.right() - 30.0 - msg_w - 24.0;
+
+    let mut hints: Vec<(&str, &str)> = Vec::new();
+    if app.has_scenes() {
+        hints.push(("1–6", "disparar"));
+    }
+    hints.extend([
+        ("espacio", "play/stop"),
+        ("↑↓", "franja"),
+        ("←→", "valor"),
         ("±", "tempo"),
-        ("esc", "pánico"),
-        ("r", "reconectar"),
-    ] {
-        text(ui, pos2(x, base), key, theme::mono(10.0), theme::DIM);
+        ("a", "asignar"),
+        ("m", "monitor"),
+        ("k", "aprender"),
+        ("p", "perfil"),
+        ("f", "firmware"),
+    ]);
+    if app.has_scenes() {
+        hints.extend([("s", "guardar"), ("r", "releer")]);
+    } else {
+        hints.push(("r", "releer"));
+    }
+    hints.push(("esc", "pánico"));
+    for (key, action) in hints {
         let kw = ui
             .painter()
             .layout_no_wrap(key.to_string(), theme::mono(10.0), theme::DIM)
             .size()
             .x;
+        let aw = ui
+            .painter()
+            .layout_no_wrap(action.to_string(), theme::mono(10.0), theme::DIMMER)
+            .size()
+            .x;
+        let width = kw + 6.0 + aw;
+        // Si no entra antes del estado, se corta la lista: mejor perder una pista que pisar el aviso.
+        if x + width > limit {
+            break;
+        }
+        text(ui, pos2(x, base), key, theme::mono(10.0), theme::DIM);
         text(
             ui,
             pos2(x + kw + 6.0, base),
@@ -108,20 +150,9 @@ pub fn footer(app: &PerfApp, ui: &Ui, rect: Rect) {
             theme::mono(10.0),
             theme::DIMMER,
         );
-        let aw = ui
-            .painter()
-            .layout_no_wrap(action.to_string(), theme::mono(10.0), theme::DIMMER)
-            .size()
-            .x;
-        x += kw + 6.0 + aw + 22.0;
+        x += width + 22.0;
     }
 
-    // a la derecha: qué pasó con el último envío, o el aviso de que no hay ack
-    let msg = match &app.status {
-        Some(line) => line.clone(),
-        None => "sin ack · estado optimista".to_string(),
-    };
-    let color = if app.error { theme::HOT } else { theme::DIMMER };
     text_right(
         ui,
         pos2(rect.right() - 30.0, base),
