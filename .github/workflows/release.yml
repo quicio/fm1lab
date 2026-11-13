@@ -80,7 +80,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: fm1lab-${{ matrix.name }}
-          path: out/
+          path: out/*.tar.gz
           if-no-files-found: error
 
   publish:
