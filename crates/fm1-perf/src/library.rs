@@ -124,6 +124,13 @@ impl Library {
         self.open = false;
     }
 
+    /// Selecciona una entrada por id (para `--firmware` y pruebas visuales).
+    pub fn select(&mut self, id: &str) {
+        if self.catalog.get(id).is_some() {
+            self.selected = Some(id.to_string());
+        }
+    }
+
     /// Relee el catálogo de usuario y vuelve a hashear los paquetes.
     pub fn refresh(&mut self) {
         self.catalog = Catalog::load();
@@ -681,19 +688,37 @@ impl Library {
 
                                     // La ruta va antes que el botón: si no se puede, no hay botón.
                                     let planned = self.planned(&entry);
+                                    let step_count = planned
+                                        .as_ref()
+                                        .and_then(|plan| plan.as_ref().ok())
+                                        .map(Vec::len)
+                                        .unwrap_or(1);
                                     if let Some(plan) = &planned {
                                         ui.add_space(6.0);
                                         match plan {
                                             Ok(steps) => {
+                                                let title = if steps.len() == 1 {
+                                                    "ruta directa · 1 paso".to_string()
+                                                } else {
+                                                    format!(
+                                                        "ruta segura · {} pasos automáticos",
+                                                        steps.len()
+                                                    )
+                                                };
                                                 ui.label(
-                                                    egui::RichText::new(theme::tracked(&format!(
-                                                        "ruta · {} paso{}",
-                                                        steps.len(),
-                                                        if steps.len() == 1 { "" } else { "s" }
-                                                    )))
-                                                    .size(9.5)
-                                                    .color(theme::DIMMER),
+                                                    egui::RichText::new(theme::tracked(&title))
+                                                        .size(9.5)
+                                                        .color(theme::DIMMER),
                                                 );
+                                                if steps.len() > 1 {
+                                                    ui.label(
+                                                        egui::RichText::new(
+                                                            "un clic ejecuta la ruta completa; no toques el aparato entre pasos",
+                                                        )
+                                                        .size(10.0)
+                                                        .color(theme::SIGNAL),
+                                                    );
+                                                }
                                                 for (index, step) in steps.iter().enumerate() {
                                                     let what = match step.kind {
                                                         StepKind::Stock => "oficial",
@@ -748,6 +773,8 @@ impl Library {
                                                 self.confirm && !blocked,
                                                 egui::Button::new(if installed {
                                                     "reinstalar"
+                                                } else if step_count > 1 {
+                                                    "instalar · ruta completa"
                                                 } else {
                                                     "instalar"
                                                 }),

@@ -926,6 +926,14 @@ impl PerfApp {
         self.library.toggle();
     }
 
+    /// Abre la biblioteca y deja seleccionada una entrada (hook de `--firmware`).
+    pub fn open_library_at(&mut self, id: Option<String>) {
+        self.library.toggle();
+        if let Some(id) = id {
+            self.library.select(&id);
+        }
+    }
+
     /// Abre el selector de perfil (hook de `--profiles` y de la tecla `p`).
     pub fn open_profiles(&mut self) {
         self.profile_open = true;

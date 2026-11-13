@@ -40,6 +40,9 @@ cargo run --profile fast -p fm1-perf -- --library     # abre la biblioteca de fi
 cargo run --profile fast -p fm1-perf -- --shot shots/panel.png --demo   # captura, sin ojos
 cargo run --profile fast -p fm1-perf -- --shot shots/firmware.png --demo --library
 cargo run --profile fast -p fm1-perf -- --shot shots/profiles.png --demo --profiles
+cargo run --profile fast -p fm1-perf -- --shot shots/route-jiant.png --library --firmware jiant-v10.7.23
+scripts/make_app.sh target/dist/fm1-perf target/FM1Lab.app  # bundle macOS
+git tag vX.Y.Z && git push origin main --tags                # dispara .github/workflows/release.yml
 openspec validate --specs --strict           # valida las specs
 ```
 
@@ -62,6 +65,9 @@ Perfiles: `fast` para iterar (~15 s por cambio), `release` para uso, `dist` para
   fork a fork, el oficial en el medio (la zona de datos de arriba no se reescribe y cada fork tiene su
   formato). Con el aparato en `ota-…` no se escribe: se termina esa actualización. `--straight` existe y
   avisa; no es un camino normal.
+- **El tag manda la versión.** `release.yml` falla si `vX.Y.Z` no coincide con la versión del
+  workspace; publica `FM1Lab.app` arm64/x86_64 y los alias estables que usa el cask. El cask es
+  estático (`version :latest`), así que un release no requiere tocar el tap.
 - **La biblioteca es dato, no código.** `firmwares.json` (raíz, embebido) lista los paquetes con su
   SHA-256; el usuario suma o pisa entradas en `~/.config/fm1lab/firmwares.json`. Los `.fwsc` se
   resuelven contra `FM1LAB_FIRMWARES` o `~/Proyectos/m-vave/firmware`; no clavar rutas en el código.

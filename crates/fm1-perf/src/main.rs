@@ -26,6 +26,7 @@ uso: fm1-perf [--shot <archivo.png>] [--demo] [--read] [--mix <seg>] [--setlist 
   --play-close <seg>     arranca el reloj y cierra solo (prueba de restauración)
   --profile <id>         usa ese perfil en vez de detectarlo
   --library              abre la biblioteca de firmwares al arrancar
+  --firmware <id>        abre la biblioteca con esa entrada seleccionada
   --profiles             abre el selector de perfil al arrancar
 ";
 
@@ -39,6 +40,7 @@ fn main() -> eframe::Result<()> {
     let mut profile: Option<String> = None;
     let mut library = false;
     let mut profiles_open = false;
+    let mut firmware: Option<String> = None;
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
         match arg.as_str() {
@@ -81,6 +83,13 @@ fn main() -> eframe::Result<()> {
             "--read" => read = true,
             "--library" => library = true,
             "--profiles" => profiles_open = true,
+            "--firmware" => match args.next() {
+                Some(id) => firmware = Some(id),
+                None => {
+                    eprintln!("--firmware necesita un id\n\n{USAGE}");
+                    return Ok(());
+                }
+            },
             "-h" | "--help" => {
                 println!("{USAGE}");
                 return Ok(());
@@ -184,7 +193,9 @@ fn main() -> eframe::Result<()> {
         options,
         Box::new(move |cc| {
             let mut app = PerfApp::new(cc, shot, demo, setlist, play_close, profile);
-            if library {
+            if let Some(id) = firmware {
+                app.open_library_at(Some(id));
+            } else if library {
                 app.open_library();
             }
             if profiles_open {

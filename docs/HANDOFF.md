@@ -12,14 +12,14 @@ updated: 2026-11-13
 | cosa | número | comando |
 |---|---|---|
 | crates | 6 (`fm1-core`, `fm1-midi`, `fm1-store`, `fm1-flash`, `fm1ctl`, `fm1-perf`) | `cargo metadata --no-deps` |
-| app de UI | 3.821 líneas de Rust, binario `fast` de 7,4 MB | `wc -l crates/fm1-perf/src/*.rs crates/fm1-perf/src/panels/*.rs` |
+| app de UI | 4.057 líneas de Rust, binario `fast` de 7,4 MB | `wc -l crates/fm1-perf/src/*.rs crates/fm1-perf/src/panels/*.rs` |
 | tests | **75**, en verde, sin aparato (10 de la ruta de instalación) | `cargo test` |
 | perfiles built-in | 3 (`generic` 66 CC · `jiant-par12` 137 editor · `x0x-1.2` 112 CC) | `fm1-perf --read` / `cargo test -p fm1-core` |
 | firmwares en el catálogo | **11** (stock, JIANT 0.9.9 y V10, X0X, dock, SLOOP, CTL-1, Felucca, sidou), todos con SHA-256 | `fm1ctl firmware` |
 | parámetros en el mapa JIANT | **239** (80 pista · 96 motor · 63 globales) | `python3 scripts/gen_nrpn.py` |
 | clippy | limpio con `-D warnings` | `cargo clippy --all-targets -- -D warnings` |
 | puerta completa | verde | `scripts/check.sh` |
-| líneas de Rust | 9.241 (incluye la tabla generada) | `find crates -name '*.rs' \| xargs wc -l` |
+| líneas de Rust | 9.995 (incluye la tabla generada) | `find crates -name '*.rs' \| xargs wc -l` |
 | disco libre | 7,9 GB; `target/` 1,0 GB | `df -h /`; `du -sh target` |
 
 El aparato corre **X0X 1.2.2** (`FM-1_9010202`, puerto `Felucca`) desde el 2026-11-13. El perfil
@@ -46,6 +46,25 @@ cargo run --profile fast -p fm1-perf -- --shot shots/firmware.png --demo --libra
 cargo run --profile fast -p fm1-perf -- --shot shots/profiles.png --demo --profiles
 cargo run --profile fast -p fm1ctl -- profile                          # perfiles y el detectado
 cargo run --profile fast -p fm1ctl -- profile x0x-1.2                  # detalle de un perfil
+cargo run --profile fast -p fm1-perf -- --shot shots/route-jiant.png --library --firmware jiant-v10.7.23
+```
+
+### Distribución macOS
+
+`scripts/make_app.sh` arma `FM1Lab.app` con `fm1-perf` como ejecutable y `fm1ctl` al lado. El workflow
+`.github/workflows/release.yml` corre la puerta, compila `dist` para arm64 e x86_64, empaqueta el `.app`
+y publica en el release del tag `vX.Y.Z`:
+
+- `fm1lab-macos-arm64-app.tar.gz` / `fm1lab-macos-x86_64-app.tar.gz` (alias estable para el cask)
+- `fm1lab-X.Y.Z-macos-{arm64,x86_64}-app.tar.gz` (versionados) y `SHA256SUMS.txt`
+
+El cask estático vive en `Casks/fm1lab.rb` y en `quicio/homebrew-tap`; apunta a
+`releases/latest/download/…`, así que no hay que bumpearlo en cada release:
+
+```bash
+brew install --cask quicio/tap/fm1lab
+open -a FM1Lab
+fm1ctl ports
 ```
 
 Teclas comunes: `espacio` play/stop · `↑↓` elegir franja · `←→` mover valor (`shift` de a 8) · `±`
@@ -243,11 +262,11 @@ Consecuencias operativas, ya incorporadas al diseño:
 
 ## Biblioteca de firmwares (2026-11-13, verificación en seco)
 
-- El catálogo built-in tiene 5 paquetes con SHA-256 calculado con `shasum -a 256`; `state_of` los
+- El catálogo built-in tiene 11 paquetes con SHA-256 calculado con `shasum -a 256`; `state_of` los
   verifica con un SHA-256 propio (vectores conocidos en `cargo test`).
 - `fm1ctl flash --dry` parseó X0X (`FM-1_9010202`, 609.662 bytes), JIANT par12 (`FM-1_909`,
   610.260), dock (`FM-1_921`, 610.110) y stock (`FM-1_016`, 718.176; sin loader, pide `--force`).
-- `fm1ctl firmware` listó los 5 con su estado y `fm1ctl firmware --install x0x-1.2.2 --dry` validó el
+- `fm1ctl firmware` listó los 11 con su estado y `fm1ctl firmware --install x0x-1.2.2 --dry` validó el
   paquete. **No se hizo ningún flash real con el instalador Rust**: eso espera confirmación explícita.
 - El aparato no tenía puertos MIDI visibles al cerrar la sesión, así que la ventana mostró
   «sin respuesta»: es el comportamiento honesto, no un fallo de la biblioteca.
@@ -276,8 +295,9 @@ se pierde: los proyectos y presets del firmware actual
   FM-1_9010202»), `route jiant-v10.7.23` y `route sloop-2.8.5` dan 2 pasos.
 - La **biblioteca de la UI** (`fm1-perf`, tecla `f`) muestra la misma ruta antes del botón: pasos, identidad
   esperada y el aviso de qué se pierde; si la ruta se niega, el botón queda deshabilitado. Instalar desde ahí
-  corre exactamente los mismos pasos y verifica la identidad después de cada uno. En `--demo` la captura
-  preselecciona una entrada de otra familia para que la ruta de dos pasos se vea.
+  es **un solo clic** («instalar · ruta completa»): los pasos corren seguidos, sin tocar el aparato entre
+  medio, y se verifica la identidad después de cada uno. `--firmware <id>` abre la biblioteca con esa
+  entrada seleccionada (se usa para la captura `shots/route-jiant.png`).
 - La identidad corta de X0X (`FM-1_901`) tiene su propio caso de test: sin eso, un aparato en X0X parece un
   firmware desconocido y la ruta sale por el oficial cuando no hacía falta.
 
@@ -288,10 +308,8 @@ se pierde: los proyectos y presets del firmware actual
 | `fm1-flash` (Rust) sólo está probado en seco | primer flash real con X0X 1.2.2 (misma versión) y el Python de `m-vave` como rescate |
 | La biblioteca no consulta red: sólo built-in + usuario | un catálogo remoto firmado, si algún día hace falta |
 | `Installer::probe` abre el puerto en cada apertura de la biblioteca mientras el sondeo/monitor también leen | cachear la identidad o reusar el `Probe`; hoy el flash los pausa, la lectura no |
-| El catálogo tiene una versión por familia; “actualización” es informativa | comparar versiones por familia cuando haya más de una entrada |
 | La re-detección tras un flash depende de que el aparato vuelva a enumerar el puerto | la app lo intenta al terminar; si falla, reiniciar `fm1lab` |
-| El perfil `generic` no conoce los CC propios de X0X/TRIBE/SLOOP | monitor/learn (fase 2) y perfiles por firmware |
-| No hay selector de perfil dentro de la ventana | hoy se elige por detección o `--profile`; falta la tecla/selector |
+| Faltan perfiles propios de TRIBE/SLOOP | el monitor/learn (`m`/`k`) ya permite construirlos en vivo |
 | JIANT no tiene prueba en vivo con X0X instalado | volver a JIANT con los `.fwsc` guardados y correr el humo de JIANT |
 | La CLI paniquea con *broken pipe* si la salida se corta (`fm1ctl params \| head`): `println!` entra en pánico con EPIPE | escribir por `io::stdout()` ignorando `ErrorKind::BrokenPipe`; el `check.sh` lo esquiva con `grep` sin `-q` |
 | Sin hot-plug: si el aparato se desconecta, `send` empieza a fallar; el sondeo lo detecta pero no avisa al instante | el sondeo relee al aparecer y el transporte se corta con error; falta un botón de reconectar explícito |

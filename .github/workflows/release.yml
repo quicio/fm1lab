@@ -1,0 +1,117 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag a publicar (vX.Y.Z)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  gate:
+    name: puerta
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Verificar versión del tag
+        shell: bash
+        run: |
+          version=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
+          if [ "v$version" != "$RELEASE_TAG" ]; then
+            echo "El tag $RELEASE_TAG no coincide con Cargo.toml ($version)" >&2
+            exit 1
+          fi
+      - name: La puerta completa
+        run: scripts/check.sh
+
+  build:
+    name: macos-${{ matrix.name }}
+    needs: gate
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: arm64
+            target: aarch64-apple-darwin
+          - name: x86_64
+            target: x86_64-apple-darwin
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: Build dist
+        run: cargo build --profile dist -p fm1-perf -p fm1ctl --target ${{ matrix.target }}
+      - name: Empaquetar FM1Lab.app
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          NAME: ${{ matrix.name }}
+        run: |
+          set -euo pipefail
+          version="${RELEASE_TAG#v}"
+          mkdir -p out
+          cp "target/$TARGET/dist/fm1-perf" out/fm1-perf
+          cp "target/$TARGET/dist/fm1ctl" out/fm1ctl
+          scripts/make_app.sh out/fm1-perf out/FM1Lab.app
+          COPYFILE_DISABLE=1 tar -C out -czf "out/fm1lab-macos-${NAME}-app.tar.gz" FM1Lab.app
+          cp "out/fm1lab-macos-${NAME}-app.tar.gz" \
+             "out/fm1lab-${version}-macos-${NAME}-app.tar.gz"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fm1lab-${{ matrix.name }}
+          path: out/
+          if-no-files-found: error
+
+  publish:
+    name: publicar release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_TAG }}
+      - name: Descargar artefactos
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum -- * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+      - name: Borrar release existente (re-tags)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete "$RELEASE_TAG" --yes --cleanup-tag=false || true
+      - name: Crear release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: dist/*
+          generate_release_notes: true
+          fail_on_unmatched_files: true
