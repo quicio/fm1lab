@@ -51,7 +51,8 @@ cargo run --profile fast -p fm1-perf -- --shot shots/route-jiant.png --library -
 
 ### Distribución macOS
 
-`scripts/make_app.sh` arma `FM1Lab.app` con `fm1-perf` como ejecutable y `fm1ctl` al lado. El workflow
+`scripts/make_app.sh` arma `FM1Lab.app` con `fm1-perf` como ejecutable, `fm1ctl` al lado y el ícono
+`assets/fm1lab.icns` (fuente editable en `assets/icon.svg`, render con `rsvg-convert` + `make_icns.sh`). El workflow
 `.github/workflows/release.yml` corre la puerta, compila `dist` para arm64 e x86_64, empaqueta el `.app`
 y publica en el release del tag `vX.Y.Z`:
 

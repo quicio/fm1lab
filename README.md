@@ -59,6 +59,7 @@ La configuración vive en `~/.config/fm1lab/` (`setlist.json`, `panel.json`, `pr
 cargo run --profile fast -p fm1-perf          # la ventana
 cargo run --profile fast -p fm1ctl -- ports   # la CLI
 scripts/check.sh                              # la puerta completa
+scripts/make_icns.sh                          # assets/icon.png -> assets/fm1lab.icns
 scripts/make_app.sh target/dist/fm1-perf target/FM1Lab.app
 ```
 
