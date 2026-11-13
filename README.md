@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/icon.png" width="112" alt="FM1Lab">
+</p>
+
 # fm1lab
 
 Laboratorio de escritorio y panel de performance para el **M-VAVE FM-1**. Detecta el firmware, elige

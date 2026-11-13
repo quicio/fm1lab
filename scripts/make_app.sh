@@ -22,11 +22,19 @@ if [ ! -x "$BIN" ]; then
   exit 1
 fi
 
+ICON="$ROOT/assets/fm1lab.icns"
+if [ ! -f "$ICON" ]; then
+  echo "falta el ícono: $ICON" >&2
+  echo "generá assets/icon.png y corré scripts/make_icns.sh" >&2
+  exit 1
+fi
+
 rm -rf "$OUT"
 mkdir -p "$OUT/Contents/MacOS" "$OUT/Contents/Resources"
 
 cp "$BIN" "$OUT/Contents/MacOS/fm1lab"
 chmod 755 "$OUT/Contents/MacOS/fm1lab"
+cp "$ICON" "$OUT/Contents/Resources/FM1Lab.icns"
 
 # fm1ctl viaja al lado del panel: el cask lo expone con `binary`.
 CTL="$(dirname "$BIN")/fm1ctl"
@@ -52,6 +60,8 @@ cat > "$OUT/Contents/Info.plist" <<PLIST
   <string>${VERSION}</string>
   <key>CFBundleExecutable</key>
   <string>fm1lab</string>
+  <key>CFBundleIconFile</key>
+  <string>FM1Lab</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleInfoDictionaryVersion</key>
