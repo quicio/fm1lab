@@ -20,7 +20,7 @@ env:
 jobs:
   gate:
     name: puerta
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,7 +41,7 @@ jobs:
   build:
     name: macos-${{ matrix.name }}
     needs: gate
-    runs-on: macos-14
+    runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
