@@ -73,7 +73,7 @@ en el perfil de usuario. El **selector de perfil** (`p`) cambia en caliente y `f
 expone en la terminal; la elección se recuerda en `profile.json`. Verificado con X0X 1.2.2
 (`x0x-1.2` detectado, 112 params).
 
-**Falta:** perfiles de TRIBE/SLOOP (el learn ya permite construirlos en vivo), `params --profile` y la
+**Falta:** perfil de TRIBE (el learn ya permite construirlo en vivo), `params --profile` y la
 prueba de learn/transporte con una perilla real. La prueba en vivo de JIANT queda pendiente de volver a
 instalarlo (M5 ya permite hacerlo desde la app).
 

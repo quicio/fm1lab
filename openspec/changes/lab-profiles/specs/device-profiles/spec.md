@@ -9,7 +9,7 @@ expone cada uno y adapte la interfaz sin recompilar la app por cada firmware.
 
 El lab SHALL describir cada firmware con un perfil que declare identidad, parámetros (nombre, rango,
 default y acceso), transporte y escenas. Un perfil SHALL poder ser un archivo JSON; los perfiles
-built-in (`generic`, `jiant-par12`, `x0x-1.2`) SHALL venir con el binario.
+built-in (`generic`, `jiant-par12`, `x0x-1.2`, `sloop-2.8`) SHALL venir con el binario.
 
 #### Scenario: Firmware no reconocido
 

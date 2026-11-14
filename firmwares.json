@@ -134,8 +134,8 @@
         "en vivo",
         "patrones"
       ],
-      "notes": "Groovebox en vivo, el más popular de la escena; de acá JIANT tomó el sistema de canciones.",
-      "profile": "generic",
+      "notes": "Groovebox en vivo, el más popular de la escena; de acá JIANT tomó el sistema de canciones. Perfil sloop-2.8 con las cuatro pistas y sus CC.",
+      "profile": "sloop-2.8",
       "url": "https://github.com/isod89/sloop-fm1/releases"
     },
     {

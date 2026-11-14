@@ -43,6 +43,6 @@ recompilar la app por cada firmware.
 
 Cada firmware tiene su contrato. El perfil es la fuente: identidad, parámetros, accesos, transporte y
 escenas. `generic` cubre el mapa CC estándar del FM-1 (6 pistas); `jiant-par12` cubre el editor
-SysEx, las secciones/proyectos y el reloj USB; `x0x-1.2` cubre los 112 CC del manual de X0X. Lo que no
+SysEx, las secciones/proyectos y el reloj USB; `x0x-1.2` cubre los 112 CC del manual de X0X y `sloop-2.8` los 44 CC de sus cuatro pistas. Lo que no
 esté en un perfil se puede aprender desde el monitor. La biblioteca de firmwares es `firmwares.json`
 (built-in + usuario) y se instala con `fm1-flash` (OTA/Felucca).

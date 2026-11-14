@@ -436,9 +436,66 @@ pub fn x0x() -> Profile {
     }
 }
 
+/// Perfil de SLOOP 2.8: groovebox de cuatro pistas.
+///
+/// Mapa del README de SLOOP (§MIDI CCs): 7 level, 10 pan, 74 filtro, 71 resonancia, 73/75/72
+/// ataque/decay/release, 5 glide, 91/93/94 reverb/chorus/delay, en el canal de cada pista. Los canales
+/// por defecto son drums 10, bass 2, pad 11 y lead 8 (GLO > MIDI); si se cambian en el aparato, los
+/// parámetros se aprenden de nuevo con `k`. SLOOP sigue el clock externo (GLO > SYSTEM > SYNC = USB).
+pub fn sloop() -> Profile {
+    let mut params = Vec::new();
+    let mut default_strips = Vec::new();
+
+    for (prefix, name, channel) in [
+        ("drums", "DRUMS", 10u8),
+        ("bass", "BASS", 2),
+        ("pad", "PAD", 11),
+        ("lead", "LEAD", 8),
+    ] {
+        for (suffix, label, cc, default) in [
+            ("level", "LEVEL", 7u8, 100i16),
+            ("pan", "PAN", 10, 64),
+            ("filter", "FILTER", 74, 64),
+            ("reso", "RESO", 71, 0),
+            ("atk", "ATK", 73, 0),
+            ("dec", "DEC", 75, 64),
+            ("rel", "REL", 72, 64),
+            ("glide", "GLIDE", 5, 0),
+            ("rev", "REV", 91, 0),
+            ("chorus", "CHORUS", 93, 0),
+            ("delay", "DELAY", 94, 0),
+        ] {
+            params.push(Param::new(
+                format!("{prefix}.{suffix}"),
+                format!("{name} {label}"),
+                Scope::Track,
+                0,
+                127,
+                default,
+                ParamAccess::Cc { channel, cc },
+            ));
+        }
+    }
+
+    for id in ["drums.level", "bass.level", "pad.level", "lead.level"] {
+        default_strips.push(id.to_string());
+    }
+
+    Profile {
+        version: VERSION,
+        id: "sloop-2.8".into(),
+        name: "SLOOP 2.8.5".into(),
+        matches: vec!["SLOOP".into(), "FM-1_900".into()],
+        params,
+        default_strips,
+        transport: TransportSpec::Midi,
+        scenes: SceneSpec::None,
+    }
+}
+
 /// Todos los perfiles built-in, en orden de preferencia.
 pub fn builtin() -> Vec<Profile> {
-    vec![x0x(), jiant(), generic()]
+    vec![x0x(), sloop(), jiant(), generic()]
 }
 
 #[cfg(test)]
@@ -500,9 +557,40 @@ mod tests {
             Some("x0x-1.2")
         );
         assert_eq!(
+            Profile::matches(&profiles, "FM-1_900", "SLOOP 2.8.5").map(|p| p.id.as_str()),
+            Some("sloop-2.8")
+        );
+        assert_eq!(
             Profile::matches(&profiles, "FOO", "BAR").map(|p| p.id.as_str()),
             None
         );
+    }
+
+    #[test]
+    fn sloop_usa_las_cuatro_pistas_y_sus_canales() {
+        let profile = sloop();
+        profile.validate().unwrap();
+        assert_eq!(
+            profile.param("drums.level").unwrap().access,
+            ParamAccess::Cc { channel: 10, cc: 7 }
+        );
+        assert_eq!(
+            profile.param("bass.filter").unwrap().access,
+            ParamAccess::Cc { channel: 2, cc: 74 }
+        );
+        assert_eq!(
+            profile.param("pad.pan").unwrap().access,
+            ParamAccess::Cc {
+                channel: 11,
+                cc: 10
+            }
+        );
+        assert_eq!(
+            profile.param("lead.delay").unwrap().access,
+            ParamAccess::Cc { channel: 8, cc: 94 }
+        );
+        assert_eq!(profile.default_strips.len(), 4);
+        assert_eq!(profile.transport, TransportSpec::Midi);
     }
 
     #[test]

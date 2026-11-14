@@ -55,7 +55,7 @@ Perfiles: `fast` para iterar (~15 s por cambio), `release` para uso, `dist` para
 - **`crates/fm1-core/src/nrpn_table.rs` está generado.** No editarlo a mano: cambiar `docs/NRPN.md`
   (que viene del firmware) y correr `scripts/gen_nrpn.py`. `check.sh` falla si divergen.
 - **La app no hardcodea un firmware: elige un perfil.** `fm1-core::profile` declara identidad,
-  parámetros con acceso (`cc`/`nrpn`/`editor`), transporte y escenas; `generic`, `jiant-par12` y `x0x-1.2` son
+  parámetros con acceso (`cc`/`nrpn`/`editor`), transporte y escenas; `generic`, `jiant-par12`, `x0x-1.2` y `sloop-2.8` son
   built-in y los del usuario van en `~/.config/fm1lab/profiles/`. `--profile` fuerza.
 - **El flasheo es deliberado y vive en `fm1-flash`.** La biblioteca (`f`/`fm1ctl firmware`) verifica
   SHA-256, respalda config y paquetes en `~/.config/fm1lab/backups/` y pide confirmación; recién ahí

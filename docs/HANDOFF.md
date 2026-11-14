@@ -13,8 +13,8 @@ updated: 2026-11-13
 |---|---|---|
 | crates | 6 (`fm1-core`, `fm1-midi`, `fm1-store`, `fm1-flash`, `fm1ctl`, `fm1-perf`) | `cargo metadata --no-deps` |
 | app de UI | 4.042 líneas de Rust, binario `fast` de 7,4 MB | `wc -l crates/fm1-perf/src/*.rs crates/fm1-perf/src/panels/*.rs` |
-| tests | **74**, en verde, sin aparato (9 de la ruta de instalación) | `cargo test` |
-| perfiles built-in | 3 (`generic` 66 CC · `jiant-par12` 137 editor · `x0x-1.2` 112 CC) | `fm1-perf --read` / `cargo test -p fm1-core` |
+| tests | **75**, en verde, sin aparato (9 de la ruta de instalación) | `cargo test` |
+| perfiles built-in | 4 (`generic` 66 CC · `jiant-par12` 137 editor · `x0x-1.2` 112 CC · `sloop-2.8` 44 CC) | `fm1-perf --read` / `cargo test -p fm1-core` |
 | firmwares en el catálogo | **11** (stock, JIANT 0.9.9 y V10, X0X, dock, SLOOP, CTL-1, Felucca, sidou), todos con SHA-256 | `fm1ctl firmware` |
 | parámetros en el mapa JIANT | **239** (80 pista · 96 motor · 63 globales) | `python3 scripts/gen_nrpn.py` |
 | clippy | limpio con `-D warnings` | `cargo clippy --all-targets -- -D warnings` |
@@ -26,7 +26,7 @@ El aparato corre **X0X 1.2.2** (`FM-1_9010202`, puerto `Felucca`) desde el 2026-
 `jiant-par12` sigue soportado, pero **no hay prueba en vivo de JIANT con esta flash**: para eso hay que
 volver a JIANT con los `.fwsc` de `~/Proyectos/m-vave/firmware/`.
 
-Lo que **no** está hecho: perfiles propios de TRIBE/SLOOP, `params --profile` y la prueba en vivo de
+Lo que **no** está hecho: perfil de TRIBE, `params --profile` y la prueba en vivo de
 learn/transporte. El monitor/learn ya está (`m`/`k`), la biblioteca de firmwares también (`f`) y el
 selector de perfil en la ventana (`p`). El **instalador Rust sólo se probó en seco**: el primer flash
 real queda pendiente de una confirmación explícita.
@@ -86,6 +86,9 @@ El lab detecta el firmware por identidad OTA + INFO y elige un perfil; si no lo 
   perfil que usan los documentos de más abajo cuando hablan de JIANT.
 - `x0x-1.2`: 112 parámetros CC del manual de X0X (909 canal 10, 808 canal 11, 303A 2, 303B 3, break 4;
   level/pan/rev/dly y los parámetros de cada parte). Transporte MIDI; X0X sigue el clock externo solo.
+- `sloop-2.8`: 44 parámetros CC del README de SLOOP, 4 pistas × 11 (level, pan, filter, reso, atk, dec,
+  rel, glide, rev, chorus, delay). Canales por defecto: drums 10, bass 2, pad 11, lead 8; transporte MIDI
+  (SLOOP sigue el clock externo con GLO > SYSTEM > SYNC = USB).
 
 Los perfiles de usuario viven en `~/.config/fm1lab/profiles/*.json` (o `FM1LAB_PROFILES`) y ganan por
 `id`. Las franjas asignadas se guardan en `~/.config/fm1lab/panel.json` (o `FM1LAB_PANEL`), por perfil.
@@ -312,7 +315,9 @@ se pierde: los proyectos y presets del firmware actual
 - La decisión vive en `fm1-core::route`; `route` corre sin escribir y acepta `--from IDENT`.
 - La **biblioteca de la UI** (`f`) muestra la ruta y el aviso de datos; instalar es un solo clic. `--firmware
   <id>` abre la biblioteca con esa entrada seleccionada.
-- SLOOP no tiene perfil propio todavía: la app cae en `generic` (66 CC). Se puede construir con `k`/learn.
+- SLOOP tiene perfil **`sloop-2.8`**: 4 pistas × 11 CC (level, pan, filter, reso, atk, dec, rel, glide, rev,
+  chorus, delay). Canales por defecto: drums 10, bass 2, pad 11, lead 8; si se cambian en GLO > MIDI, se
+  vuelven a aprender con `k`.
 
 ## Deuda conocida
 
@@ -320,11 +325,10 @@ se pierde: los proyectos y presets del firmware actual
 |---|---|
 | El cambio entre forks puede dejar la zona de datos incompatible | el aviso está antes de confirmar; el rescate es M-UPGRADE o el instalador Python de `m-vave` |
 | El stock V16 no se puede instalar por OTA | usar M-UPGRADE; la app lo rechaza con ese mensaje |
-| SLOOP no tiene perfil propio | cae en `generic`; construirlo con el monitor/learn (`m`/`k`) |
 | La biblioteca no consulta red: sólo built-in + usuario | un catálogo remoto firmado, si algún día hace falta |
 | `Installer::probe` abre el puerto en cada apertura de la biblioteca mientras el sondeo/monitor también leen | cachear la identidad o reusar el `Probe`; hoy el flash los pausa, la lectura no |
 | La re-detección tras un flash depende de que el aparato vuelva a enumerar el puerto | la app lo intenta al terminar; si falla, reiniciar `fm1lab` |
-| Faltan perfiles propios de TRIBE/SLOOP | el monitor/learn (`m`/`k`) ya permite construirlos en vivo |
+| Falta el perfil de TRIBE | el monitor/learn (`m`/`k`) ya permite construirlo en vivo |
 | JIANT no tiene prueba en vivo con X0X instalado | volver a JIANT con los `.fwsc` guardados y correr el humo de JIANT |
 | La CLI paniquea con *broken pipe* si la salida se corta (`fm1ctl params \| head`): `println!` entra en pánico con EPIPE | escribir por `io::stdout()` ignorando `ErrorKind::BrokenPipe`; el `check.sh` lo esquiva con `grep` sin `-q` |
 | Sin hot-plug: si el aparato se desconecta, `send` empieza a fallar; el sondeo lo detecta pero no avisa al instante | el sondeo relee al aparecer y el transporte se corta con error; falta un botón de reconectar explícito |

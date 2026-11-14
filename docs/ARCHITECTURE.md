@@ -34,7 +34,7 @@ CLI verifica la codificación de bytes en un segundo.
 | `fm1-core/src/nrpn_table.rs` | **generado** desde `docs/NRPN.md` (239 parámetros: 80 de pista, 96 de motor, 63 globales) | no se edita a mano |
 | `fm1-core/src/message.rs` | bytes: CC, PC, notas, NRPN de 4 mensajes, realtime (`Start`/`Stop`/clock), handshake de identidad | no tiene estado ni decide |
 | `fm1-core/src/editor.rs` | editor protocol: tramas `F0 7D 46 4C …`, offset binary, `Clock`, parseo de `INFO`/`GET`/`SET`/`PROJECT`/`SONG` | no abre puertos ni espera respuestas |
-| `fm1-core/src/profile.rs` | perfil de firmware: identidad, `Param`/`ParamAccess` (cc/nrpn/editor), transporte, escenas y built-ins `generic`/`jiant-par12`/`x0x-1.2` | no abre puertos ni archivos |
+| `fm1-core/src/profile.rs` | perfil de firmware: identidad, `Param`/`ParamAccess` (cc/nrpn/editor), transporte, escenas y built-ins `generic`/`jiant-par12`/`x0x-1.2`/`sloop-2.8` | no abre puertos ni archivos |
 | `fm1-core/src/device.rs` | intenciones: `set_bpm`, `set_global`, `set_track`, `goto_section`, `load_project`, `load_sound`, `play(item)`, `panic`, `set_clock`, `start`/`stop`/`pulse` | no sabe si abajo hay USB, TRS o un grabador de prueba |
 | `fm1-core/src/setlist.rs` | modelo serializable del set (sección, proyecto, sonido) con validación de rangos | no persiste: eso es del adaptador |
 | `fm1-core/src/route.rs` | la ruta de instalación: familia del aparato y del paquete, un paso directo con aviso entre forks, negativas explícitas (stock por M-UPGRADE) | no escribe, no abre puertos, no hashea nada |
@@ -65,8 +65,9 @@ La app no habla un firmware: habla el **perfil** que elige al arrancar. Un perfi
 - **Escenas**: `program_change` (secciones/proyectos), `patterns`, `clips` o `none`. La UI de setlist y
   las teclas `1–6`/`s`/`l`/`c` sólo aparecen si hay escenas.
 
-Built-in: `generic` (66 CC de 6 pistas), `jiant-par12` (editor, secciones, reloj USB) y `x0x-1.2`
-(112 CC: 909/808/303/break, canales 10/11/2/3/4). Los perfiles de usuario van en
+Built-in: `generic` (66 CC de 6 pistas), `jiant-par12` (editor, secciones, reloj USB), `x0x-1.2`
+(112 CC: 909/808/303/break, canales 10/11/2/3/4) y `sloop-2.8` (44 CC: drums/bass/pad/lead, canales
+10/2/11/8). Los perfiles de usuario van en
 `~/.config/fm1lab/profiles/*.json`; el de usuario gana por `id`. La detección usa la identidad OTA +
 `INFO`; si no matchea, cae a `generic`; `--profile` lo fuerza. `p` abre el selector y `fm1ctl profile`
 lo lista; la elección manual se recuerda en `profile.json` y se aplica cuando no hay aparato.
