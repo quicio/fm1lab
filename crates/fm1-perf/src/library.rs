@@ -30,7 +30,6 @@ pub struct Library {
     query: String,
     selected: Option<String>,
     confirm: bool,
-    force: bool,
     installed: Option<String>,
     installed_error: Option<String>,
     probing: bool,
@@ -57,7 +56,6 @@ impl Library {
             query: String::new(),
             selected: None,
             confirm: false,
-            force: false,
             installed: None,
             installed_error: None,
             probing: false,
@@ -195,7 +193,6 @@ impl Library {
         self.result = None;
         self.log.clear();
         let tx = self.tx.clone();
-        let force = self.force;
         thread::spawn(move || {
             // El sondeo/monitor pueden estar a mitad de una lectura: se les da tiempo a soltar el
             // puerto antes de que el instalador empiece el handshake.
@@ -246,11 +243,7 @@ impl Library {
                 entry.identity.clone(),
                 Family::parse(&entry.family),
             );
-            let steps = match route::plan(
-                &current,
-                &target,
-                stock.as_ref().map(|other| other.identity.as_str()),
-            ) {
+            let steps = match route::plan(&current, &target) {
                 Ok(steps) => steps,
                 Err(refusal) => {
                     let _ = tx.send(Msg::Flashed(Err(refusal.to_string())));
@@ -271,7 +264,7 @@ impl Library {
                             return;
                         }
                     },
-                    StepKind::Target => (entry.path(), force, "destino"),
+                    StepKind::Target => (entry.path(), false, "destino"),
                 };
                 let _ = tx.send(Msg::Line(format!(
                     "[{}/{}] {what}: {}",
@@ -389,7 +382,6 @@ impl Library {
                     self.flashed = true;
                     self.installed = Some(identity.clone());
                     self.installed_error = None;
-                    self.force = false;
                     let line = format!("instalado · {identity}");
                     self.result = Some((line.clone(), false));
                     status = Some((line, false));
@@ -416,16 +408,7 @@ impl Library {
             entry.identity.clone(),
             Family::parse(&entry.family),
         );
-        let stock = self
-            .catalog
-            .entries
-            .iter()
-            .find(|other| Family::parse(&other.family) == Family::Stock);
-        Some(route::plan(
-            current,
-            &target,
-            stock.map(|other| other.identity.as_str()),
-        ))
+        Some(route::plan(current, &target))
     }
 
     /// El nombre del firmware instalado, si el catálogo lo reconoce por identidad.
@@ -557,7 +540,6 @@ impl Library {
                                         if response.clicked() {
                                             self.selected = Some(entry.id.clone());
                                             self.confirm = false;
-                                            self.force = false;
                                         }
                                         ui.add(
                                             egui::Label::new(
@@ -735,7 +717,14 @@ impl Library {
                                                         .color(theme::DIM),
                                                     );
                                                 }
-                                                if steps.len() > 1 {
+                                                let from = Family::from_identity(
+                                                    self.installed.as_deref().unwrap_or(""),
+                                                );
+                                                let target_family = Family::parse(&entry.family);
+                                                let cross = from != target_family
+                                                    && from != Family::Stock
+                                                    && target_family != Family::Stock;
+                                                if cross {
                                                     ui.label(
                                                         egui::RichText::new(
                                                             "se pierde: los proyectos y presets del firmware actual",
@@ -763,10 +752,6 @@ impl Library {
                                         ui.checkbox(
                                             &mut self.confirm,
                                             "confirmo: se reescribe la flash; no desconectar",
-                                        );
-                                        ui.checkbox(
-                                            &mut self.force,
-                                            "permitir paquete sin loader de Felucca (--force)",
                                         );
                                         if ui
                                             .add_enabled(

@@ -37,7 +37,7 @@ CLI verifica la codificación de bytes en un segundo.
 | `fm1-core/src/profile.rs` | perfil de firmware: identidad, `Param`/`ParamAccess` (cc/nrpn/editor), transporte, escenas y built-ins `generic`/`jiant-par12`/`x0x-1.2` | no abre puertos ni archivos |
 | `fm1-core/src/device.rs` | intenciones: `set_bpm`, `set_global`, `set_track`, `goto_section`, `load_project`, `load_sound`, `play(item)`, `panic`, `set_clock`, `start`/`stop`/`pulse` | no sabe si abajo hay USB, TRS o un grabador de prueba |
 | `fm1-core/src/setlist.rs` | modelo serializable del set (sección, proyecto, sonido) con validación de rangos | no persiste: eso es del adaptador |
-| `fm1-core/src/route.rs` | la ruta segura de instalación: familia del aparato y del paquete, pasos con su motivo y negativas explícitas | no escribe, no abre puertos, no hashea nada |
+| `fm1-core/src/route.rs` | la ruta de instalación: familia del aparato y del paquete, un paso directo con aviso entre forks, negativas explícitas (stock por M-UPGRADE) | no escribe, no abre puertos, no hashea nada |
 | `fm1-core/src/transport.rs` | los traits `MidiOut`/`MidiIn` y los dobles `Recorder`, `ScriptedIn`, `Silent` | no transporta nada |
 | `fm1-midi/src/lib.rs` | descubre puertos, abre salida, lee en un hilo, `identify()`, `editor()` (pedido/respuesta), `read/write_param` por acceso (editor/CC/NRPN), `watch`, `ClockMaster` (reloj USB o MIDI) | no decide qué mandar ni arma el set |
 | `fm1-store/src/lib.rs` | setlist, `panel.json` y perfiles de usuario en JSON versionado, escritura atómica, validación, `.bak` | no sabe de MIDI, de egui ni de puertos |

@@ -48,7 +48,7 @@ usuario confirma
 | Paquete equivocado o corrupto | Identidad del paquete vs. modelo del aparato; SHA-256 del catálogo |
 | Otro cliente MIDI interfiere | Pausa de `Probe`/`Monitor` y transporte parado |
 | El usuario no sabe qué va a pasar | Confirmación explícita, ficha con identidad/perfil y log en vivo |
-| Stock V16 sin loader | `--force`/checkbox explícito; se documenta M-UPGRADE |
+| Stock V16 sin loader | no se ofrece por OTA: M-UPGRADE; la ruta lo rechaza |
 
 ## No-goals
 

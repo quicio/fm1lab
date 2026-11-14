@@ -29,7 +29,7 @@ cargo run --profile fast -p fm1ctl -- profile         # perfiles disponibles y e
 cargo run --profile fast -p fm1ctl -- profile x0x-1.2 # detalle de un perfil
 cargo run --profile fast -p fm1ctl -- firmware        # biblioteca: identidad, sha y estado de paquetes
 cargo run --profile fast -p fm1ctl -- firmware --install x0x-1.2.2 --dry  # valida sin escribir
-cargo run --profile fast -p fm1ctl -- route jiant-v10.7.23   # la ruta segura, sin escribir
+cargo run --profile fast -p fm1ctl -- route jiant-v10.7.23   # la ruta, sin escribir
 cargo run --profile fast -p fm1ctl -- flash x.fwsc --dry  # parsea un .fwsc; --yes es el único que escribe
 cargo run --profile fast -p fm1-perf                  # la ventana de performance
 cargo run --profile fast -p fm1-perf -- --read        # el set que armaría, sin ventana
@@ -61,10 +61,10 @@ Perfiles: `fast` para iterar (~15 s por cambio), `release` para uso, `dist` para
   SHA-256, respalda config y paquetes en `~/.config/fm1lab/backups/` y pide confirmación; recién ahí
   `fm1-flash` habla OTA/Felucca. Nunca instalar en silencio y pausar transporte/sondeo/monitor antes.
   El instalador Python de `m-vave` queda como rescate.
-- **La ruta la decide `fm1-core::route`, no quien instala.** Misma familia o desde el oficial, directo; de
-  fork a fork, el oficial en el medio (la zona de datos de arriba no se reescribe y cada fork tiene su
-  formato). Con el aparato en `ota-…` no se escribe: se termina esa actualización. `--straight` existe y
-  avisa; no es un camino normal.
+- **La ruta la decide `fm1-core::route`, no quien instala.** Misma familia o desde el oficial, directo;
+  de fork a fork, directo **con aviso** (el stock V16 no es Felucca y no puede ser paso intermedio; se
+  instala con M-UPGRADE). Destino stock: se rechaza. Con el aparato en `ota-…` no se escribe: se termina
+  esa actualización. `--straight` queda como escape explícito.
 - **El tag manda la versión.** `release.yml` falla si `vX.Y.Z` no coincide con la versión del
   workspace; publica `FM1Lab.app` arm64/x86_64 y los alias estables que usa el cask. El cask es
   estático (`version :latest`), así que un release no requiere tocar el tap.

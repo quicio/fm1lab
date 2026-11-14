@@ -66,8 +66,8 @@ impl Default for Timing {
             hs_full: Duration::from_millis(600),
             idle_check: Duration::from_millis(8000),
             idle_write: Duration::from_millis(180_000),
-            wait_loader: Duration::from_millis(30_000),
-            wait_reboot: Duration::from_millis(40_000),
+            wait_loader: Duration::from_millis(120_000),
+            wait_reboot: Duration::from_millis(120_000),
         }
     }
 }

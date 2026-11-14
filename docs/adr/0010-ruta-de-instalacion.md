@@ -1,12 +1,15 @@
 ---
 id: adr-0010
 title: La ruta de instalación pasa por el oficial cuando cambia la familia
-status: aprobada
+status: supersedida por 0011
 date: 2026-11-13
 supersedes: —
 ---
 
 # 0010 — Ruta de instalación con el oficial en el medio
+
+> Revisada por [ADR-0011](0011-cambio-directo-entre-forks.md): el paquete oficial V16 no es Felucca y no
+> puede ser paso intermedio. El cambio entre forks es directo, con aviso.
 
 ## Contexto
 

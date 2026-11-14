@@ -21,7 +21,8 @@ $cli params global       | grep "BPM" >/dev/null
 # Ruta de instalación: la misma familia es directa, de fork a fork pasa por el oficial, y en modo update
 # no se escribe nada. Sin aparato: todo con --from.
 $cli route jiant-par12 --from FM-1_016      | grep "1 paso" >/dev/null
-$cli route jiant-par12 --from FM-1_9010202  | grep "2 pasos" >/dev/null
+$cli route jiant-par12 --from FM-1_9010202  | grep "directo entre forks" >/dev/null
+if $cli route stock-v16 --from FM-1_9010202 >/dev/null 2>&1; then exit 1; fi
 if $cli route jiant-par12 --from ota-FM-1_921 >/dev/null 2>&1; then exit 1; fi
 
 # Humo del setlist: plantilla, guardado atómico y lectura con bytes, sin puerto.

@@ -12,14 +12,14 @@ updated: 2026-11-13
 | cosa | número | comando |
 |---|---|---|
 | crates | 6 (`fm1-core`, `fm1-midi`, `fm1-store`, `fm1-flash`, `fm1ctl`, `fm1-perf`) | `cargo metadata --no-deps` |
-| app de UI | 4.057 líneas de Rust, binario `fast` de 7,4 MB | `wc -l crates/fm1-perf/src/*.rs crates/fm1-perf/src/panels/*.rs` |
-| tests | **75**, en verde, sin aparato (10 de la ruta de instalación) | `cargo test` |
+| app de UI | 4.042 líneas de Rust, binario `fast` de 7,4 MB | `wc -l crates/fm1-perf/src/*.rs crates/fm1-perf/src/panels/*.rs` |
+| tests | **74**, en verde, sin aparato (9 de la ruta de instalación) | `cargo test` |
 | perfiles built-in | 3 (`generic` 66 CC · `jiant-par12` 137 editor · `x0x-1.2` 112 CC) | `fm1-perf --read` / `cargo test -p fm1-core` |
 | firmwares en el catálogo | **11** (stock, JIANT 0.9.9 y V10, X0X, dock, SLOOP, CTL-1, Felucca, sidou), todos con SHA-256 | `fm1ctl firmware` |
 | parámetros en el mapa JIANT | **239** (80 pista · 96 motor · 63 globales) | `python3 scripts/gen_nrpn.py` |
 | clippy | limpio con `-D warnings` | `cargo clippy --all-targets -- -D warnings` |
 | puerta completa | verde | `scripts/check.sh` |
-| líneas de Rust | 9.995 (incluye la tabla generada) | `find crates -name '*.rs' \| xargs wc -l` |
+| líneas de Rust | 9.965 (incluye la tabla generada) | `find crates -name '*.rs' \| xargs wc -l` |
 | disco libre | 7,9 GB; `target/` 1,0 GB | `df -h /`; `du -sh target` |
 
 El aparato corre **X0X 1.2.2** (`FM-1_9010202`, puerto `Felucca`) desde el 2026-11-13. El perfil
@@ -137,8 +137,8 @@ Instalar exige **confirmación explícita** en la ventana (o `--yes` en la CLI).
 orden: se para el transporte, se pausan el sondeo y el monitor, se copia `setlist.json`, `panel.json`,
 `firmwares.json`, los perfiles y todos los `.fwsc` a `~/.config/fm1lab/backups/<AAAAMMDD-HHMMSS>/`,
 se verifica el SHA-256 y recién ahí `fm1-flash` habla el protocolo OTA/Felucca (handshake, loader,
-escritura y verificación de identidad al reiniciar). El stock V16 no trae el loader de Felucca: hay
-que marcar `--force` o usar M-UPGRADE. No hay instalación silenciosa.
+escritura y verificación de identidad al reiniciar). El stock V16 no trae el loader de Felucca y **no se
+puede instalar por OTA**: se rechaza y se manda a M-UPGRADE. No hay instalación silenciosa.
 
 Al terminar el flash la app **re-detecta el perfil** sin reiniciar; si el aparato tarda en volver a
 enumerar, el pie avisa y un reinicio lo resuelve. La CLI equivalente es `fm1ctl firmware` (lista), `fm1ctl firmware --install <id> --dry` (valida
@@ -266,47 +266,61 @@ Consecuencias operativas, ya incorporadas al diseño:
 - El catálogo built-in tiene 11 paquetes con SHA-256 calculado con `shasum -a 256`; `state_of` los
   verifica con un SHA-256 propio (vectores conocidos en `cargo test`).
 - `fm1ctl flash --dry` parseó X0X (`FM-1_9010202`, 609.662 bytes), JIANT par12 (`FM-1_909`,
-  610.260), dock (`FM-1_921`, 610.110) y stock (`FM-1_016`, 718.176; sin loader, pide `--force`).
+  610.260), dock (`FM-1_921`, 610.110) y stock (`FM-1_016`, 718.176; sin loader, sólo M-UPGRADE).
 - `fm1ctl firmware` listó los 11 con su estado y `fm1ctl firmware --install x0x-1.2.2 --dry` validó el
-  paquete. **No se hizo ningún flash real con el instalador Rust**: eso espera confirmación explícita.
+  paquete. El instalador Rust se estrenó en vivo el 2026-11-14 con el cambio directo X0X → SLOOP.
 - El aparato no tenía puertos MIDI visibles al cerrar la sesión, así que la ventana mostró
   «sin respuesta»: es el comportamiento honesto, no un fallo de la biblioteca.
 
-## Ruta de instalación (2026-11-13)
+## Ruta de instalación y cambio real (2026-11-14)
 
-El aparato estaba en X0X (`FM-1_9010202`) y el destino natural era JIANT V10: fork sobre fork, el caso que
-deja la zona de datos con el formato viejo. La decisión ya no está en la cabeza de quien instala:
+El intento de cambiar X0X → SLOOP por la ruta de ADR-0010 falló en el **paso al oficial**:
+
+```
+flash: el FM-1 dejó de contestar después de 4 pedidos; no se escribió nada
+```
+
+`fm1-stock-official.fwsc` no es un paquete Felucca (no tiene `FELUCCA-LOADER-1`): el X0X corta la lectura
+del paquete y no hay forma de usar el stock como paso intermedio. El stock sólo entra con **M-UPGRADE**.
+
+El cambio directo, en una sola escritura, **funcionó**:
+
+```bash
+fm1ctl flash firmware/sloop-2.8.5.fwsc --straight --yes
+# ...
+# escritura completa
+# aparato: FM-1_900 (Felucca)
+```
+
+El primer intento dio dos falsos errores por timeouts cortos: el loader tardó más de 30 s en enumerar y el
+aparato tardó más de 40 s en volver. Se subieron `wait_loader` y `wait_reboot` a **120 s** (ADR-0011).
+
+La ruta queda así (ADR-0011, reemplaza a ADR-0010):
 
 ```
 $ fm1ctl route jiant-v10.7.23
-aparato: FM-1_9010202 (x0x)
+aparato: FM-1_900 (sloop)
 paquete: jiant-v10.7.23 (jiant, identidad FM-1_909)
-ruta: 2 pasos
-  1. oficial -> espera FM-1_016
-     paso 1: volver al oficial, que deja la zona de datos en su estado de fábrica
-  2. destino -> espera FM-1_909
-     paso 2: instalar el destino desde la línea base
+ruta: 1 paso
+  1. destino -> espera FM-1_909
+     cambio directo entre forks: la zona de datos puede quedar incompatible; exportá los proyectos antes
 se pierde: los proyectos y presets del firmware actual
 ```
 
-- La decisión vive en `fm1-core::route` (ADR-0010) y la aplican `flash` y `firmware --install`; `--straight`
-  es el único escape y avisa en pantalla.
-- `route` corre sin escribir y acepta `--from IDENT` para ensayar sin aparato.
-- Se verificó contra el aparato real: `route stock-v16` da 1 paso, `route x0x-1.2.2` se niega («ya reporta
-  FM-1_9010202»), `route jiant-v10.7.23` y `route sloop-2.8.5` dan 2 pasos.
-- La **biblioteca de la UI** (`fm1-perf`, tecla `f`) muestra la misma ruta antes del botón: pasos, identidad
-  esperada y el aviso de qué se pierde; si la ruta se niega, el botón queda deshabilitado. Instalar desde ahí
-  es **un solo clic** («instalar · ruta completa»): los pasos corren seguidos, sin tocar el aparato entre
-  medio, y se verifica la identidad después de cada uno. `--firmware <id>` abre la biblioteca con esa
-  entrada seleccionada (se usa para la captura `shots/route-jiant.png`).
-- La identidad corta de X0X (`FM-1_901`) tiene su propio caso de test: sin eso, un aparato en X0X parece un
-  firmware desconocido y la ruta sale por el oficial cuando no hacía falta.
+- `route stock-v16` se niega: «el paquete oficial V16 no es un paquete Felucca… usá M-UPGRADE».
+- `route x0x-1.2.2` se niega si ya está esa identidad; `route jiant-v10.7.23` desde SLOOP es 1 paso.
+- La decisión vive en `fm1-core::route`; `route` corre sin escribir y acepta `--from IDENT`.
+- La **biblioteca de la UI** (`f`) muestra la ruta y el aviso de datos; instalar es un solo clic. `--firmware
+  <id>` abre la biblioteca con esa entrada seleccionada.
+- SLOOP no tiene perfil propio todavía: la app cae en `generic` (66 CC). Se puede construir con `k`/learn.
 
 ## Deuda conocida
 
 | causa | arreglo |
 |---|---|
-| `fm1-flash` (Rust) sólo está probado en seco | primer flash real con X0X 1.2.2 (misma versión) y el Python de `m-vave` como rescate |
+| El cambio entre forks puede dejar la zona de datos incompatible | el aviso está antes de confirmar; el rescate es M-UPGRADE o el instalador Python de `m-vave` |
+| El stock V16 no se puede instalar por OTA | usar M-UPGRADE; la app lo rechaza con ese mensaje |
+| SLOOP no tiene perfil propio | cae en `generic`; construirlo con el monitor/learn (`m`/`k`) |
 | La biblioteca no consulta red: sólo built-in + usuario | un catálogo remoto firmado, si algún día hace falta |
 | `Installer::probe` abre el puerto en cada apertura de la biblioteca mientras el sondeo/monitor también leen | cachear la identidad o reusar el `Probe`; hoy el flash los pausa, la lectura no |
 | La re-detección tras un flash depende de que el aparato vuelva a enumerar el puerto | la app lo intenta al terminar; si falla, reiniciar `fm1lab` |

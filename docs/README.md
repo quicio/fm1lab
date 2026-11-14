@@ -29,7 +29,8 @@ updated: 2026-11-13
 | [0004](adr/0004-mapa-nrpn-generado.md) | el mapa NRPN se genera desde el doc del firmware | aprobada |
 | [0005](adr/0005-openspec-fuente-de-verdad.md) | `openspec/` gobierna los cambios; `docs/` describe el estado | aprobada |
 | [0006](adr/0006-png-para-capturas.md) | `png` para la captura headless de `--shot` | aprobada |
-| [0010](adr/0010-ruta-de-instalacion.md) | la ruta de instalación pasa por el oficial cuando cambia la familia | aprobada |
+| [0010](adr/0010-ruta-de-instalacion.md) | la ruta de instalación pasa por el oficial cuando cambia la familia | supersedida por 0011 |
+| [0011](adr/0011-cambio-directo-entre-forks.md) | forks directos; el stock se instala con M-UPGRADE | aprobada |
 | [0007](adr/0007-json-para-setlists.md) | JSON (`serde_json`) para persistir setlists | aprobada |
 | [0008](adr/0008-perfiles-de-firmware.md) | el lab se organiza por perfiles de firmware, no por app | aprobada |
 | [0009](adr/0009-instalador-ota-y-biblioteca.md) | instalador OTA en Rust (`fm1-flash`) + biblioteca con SHA-256 y backup | aprobada |

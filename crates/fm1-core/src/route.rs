@@ -1,19 +1,22 @@
-//! La ruta segura de instalación: qué paquete se puede escribir encima de qué.
+//! La ruta de instalación: qué paquete se puede escribir encima de qué.
 //!
-//! El problema que resuelve esta capa: la instalación reemplaza la zona de aplicación de la flash
-//! (`0x4000`–`0x92FFF`) pero **no** la zona de datos de arriba (presets y proyectos, alrededor de `0x97000` y
-//! `0xFC000`). Cada fork tiene su propio formato ahí, así que escribir un fork encima de otro deja los datos
-//! viejos y el firmware nuevo los lee mal: es el soft-brick documentado de Felucca 0.9 → 1.0.x, que sólo se
-//! arreglaba borrando dos regiones a mano.
+//! La instalación reemplaza la zona de aplicación de la flash (`0x4000`–`0x92FFF`) pero **no** la zona de
+//! datos de arriba (presets y proyectos, alrededor de `0x97000` y `0xFC000`). Cada fork tiene su propio
+//! formato ahí, así que escribir un fork encima de otro puede dejar datos viejos que el firmware nuevo lee
+//! mal. El caso documentado es Felucca 0.9 → 1.0.x.
 //!
-//! Reglas, y no hay más:
+//! La ruta “oficial en el medio” **no es ejecutable con este instalador**: el paquete de fábrica V16 no es
+//! un paquete Felucca (no trae `FELUCCA-LOADER-1`), y el firmware que corre corta la lectura del paquete.
+//! El stock sólo se instala con M-UPGRADE. Por eso, entre forks, la única ruta disponible es la directa, con
+//! un aviso explícito: es una sola escritura y la zona de datos puede quedar incompatible.
 //!
-//! | desde                | a             | ruta                       |
-//! |----------------------|---------------|----------------------------|
-//! | oficial de fábrica   | cualquiera    | directo                    |
-//! | misma familia        | actualización | directo                    |
-//! | un fork              | otro fork     | **oficial en el medio**    |
-//! | modo update          | —             | no se escribe: se termina  |
+//! | desde                | a             | ruta                                  |
+//! |----------------------|---------------|---------------------------------------|
+//! | oficial de fábrica   | un fork       | directo                               |
+//! | misma familia        | actualización | directo                               |
+//! | un fork              | otro fork     | directo, con aviso de datos           |
+//! | un fork              | oficial       | no: usar M-UPGRADE                    |
+//! | modo update          | —             | no se escribe: se termina             |
 //!
 //! Es dominio puro: no abre puertos, no lee archivos, no sabe de SHA-256. La identidad del aparato y la del
 //! paquete entran como texto; la ruta sale como una lista de pasos con su motivo.
@@ -153,6 +156,8 @@ pub enum Refusal {
     NoStock,
     /// La ruta pasa por el oficial y eso resetea la zona de datos: hay que respaldar antes.
     NeedsBackup,
+    /// El paquete oficial no es un paquete Felucca: se instala con M-UPGRADE, no por OTA.
+    StockNeedsMUpgrade,
     /// El destino es el mismo estado que ya está corriendo.
     AlreadyThere(String),
 }
@@ -172,6 +177,10 @@ impl fmt::Display for Refusal {
                 "la ruta pasa por el oficial y eso resetea la zona de datos del firmware actual.\n\
                  Exportá tus proyectos primero (editor del firmware) y volvé a intentar",
             ),
+            Refusal::StockNeedsMUpgrade => f.write_str(
+                "el paquete oficial V16 no es un paquete Felucca: no se puede instalar por OTA.\n\
+                 Para volver al stock usá M-UPGRADE; después fm1lab puede instalar otro fork",
+            ),
             Refusal::AlreadyThere(identity) => {
                 write!(f, "el aparato ya reporta {identity}: no hay nada que escribir")
             }
@@ -183,12 +192,9 @@ impl std::error::Error for Refusal {}
 
 /// La ruta para llevar el aparato de `current` a `target`.
 ///
-/// `stock_identity` es la identidad del paquete oficial del catálogo; sólo se usa si la ruta lo necesita.
-pub fn plan(
-    current: &str,
-    target: &Target,
-    stock_identity: Option<&str>,
-) -> Result<Vec<PlanStep>, Refusal> {
+/// No hay paso intermedio por el oficial: su paquete V16 no es Felucca. Entre forks la ruta es directa y el
+/// paso lleva el aviso de datos; el llamador decide si lo muestra y si pide confirmación.
+pub fn plan(current: &str, target: &Target) -> Result<Vec<PlanStep>, Refusal> {
     let text = current.trim();
     if text.to_ascii_lowercase().starts_with("ota-") {
         return Err(Refusal::MidUpdate);
@@ -206,11 +212,7 @@ pub fn plan(
         }]);
     }
     if target.family == Family::Stock {
-        return Ok(vec![PlanStep {
-            kind: StepKind::Target,
-            expect: target.identity.clone(),
-            reason: "volver al firmware oficial: directo desde cualquier firmware",
-        }]);
+        return Err(Refusal::StockNeedsMUpgrade);
     }
     if now == Family::Stock {
         return Ok(vec![PlanStep {
@@ -220,20 +222,12 @@ pub fn plan(
         }]);
     }
 
-    // fork → fork: el oficial en el medio, porque deja la zona de datos como la espera cualquier fork
-    let stock = stock_identity.ok_or(Refusal::NoStock)?;
-    Ok(vec![
-        PlanStep {
-            kind: StepKind::Stock,
-            expect: stock.to_string(),
-            reason: "paso 1: volver al oficial, que deja la zona de datos en su estado de fábrica",
-        },
-        PlanStep {
-            kind: StepKind::Target,
-            expect: target.identity.clone(),
-            reason: "paso 2: instalar el destino desde la línea base",
-        },
-    ])
+    // fork → fork: no hay puente por el oficial (el stock no es Felucca); se escribe directo y se avisa.
+    Ok(vec![PlanStep {
+        kind: StepKind::Target,
+        expect: target.identity.clone(),
+        reason: "cambio directo entre forks: la zona de datos puede quedar incompatible; exportá los proyectos antes",
+    }])
 }
 
 #[cfg(test)]
@@ -248,67 +242,60 @@ mod tests {
     fn misma_familia_es_un_solo_paso() {
         // el paquete se anuncia igual que el aparato (formato de identidad): se niega, no se reescribe
         assert!(matches!(
-            plan("FM-1_909", &jiant("FM-1_909"), None),
+            plan("FM-1_909", &jiant("FM-1_909")),
             Err(Refusal::AlreadyThere(_))
         ));
-        // misma familia, identidad distinta: un paso. JIANT comparte la identidad entre versiones, así que
-        // acá se usa otro paquete de la misma familia para el caso general
-        let steps = plan(
-            "FM-1_921",
-            &Target::new("dock-0.8.2", "FM-1_921", Family::Dock),
-            None,
-        );
-        assert!(matches!(steps, Err(Refusal::AlreadyThere(_))));
-        let steps = plan("FM-1_016", &jiant("FM-1_909"), None).unwrap();
+        // misma familia, identidad distinta: un paso
+        let steps = plan("FM-1_9091", &jiant("FM-1_909")).unwrap();
         assert_eq!(steps.len(), 1);
         assert_eq!(steps[0].kind, StepKind::Target);
+        assert!(steps[0].reason.contains("misma familia"));
     }
 
     #[test]
-    fn fork_a_fork_pasa_por_el_oficial() {
-        let steps = plan("FM-1_9010202", &jiant("FM-1_909"), Some("FM-1_016")).unwrap();
-        assert_eq!(steps.len(), 2);
-        assert_eq!(steps[0].kind, StepKind::Stock);
-        assert_eq!(steps[0].expect, "FM-1_016");
-        assert_eq!(steps[1].kind, StepKind::Target);
+    fn fork_a_fork_es_directo_con_aviso() {
+        let steps = plan("FM-1_9010202", &jiant("FM-1_909")).unwrap();
+        assert_eq!(steps.len(), 1);
+        assert_eq!(steps[0].kind, StepKind::Target);
+        assert_eq!(steps[0].expect, "FM-1_909");
+        assert!(steps[0].reason.contains("directo entre forks"));
+        assert!(steps[0].reason.contains("zona de datos"));
     }
 
     #[test]
     fn desde_el_oficial_es_directo() {
-        let steps = plan("FM-1_016", &jiant("FM-1_909"), Some("FM-1_016")).unwrap();
+        let steps = plan("FM-1_016", &jiant("FM-1_909")).unwrap();
         assert_eq!(steps.len(), 1);
         assert_eq!(steps[0].kind, StepKind::Target);
+        assert!(steps[0].reason.contains("desde el oficial"));
     }
 
     #[test]
-    fn volver_al_oficial_es_directo_desde_cualquier_fork() {
+    fn volver_al_oficial_necesita_m_upgrade() {
         let stock = Target::new("stock", "FM-1_016", Family::Stock);
-        let steps = plan("FM-1_921", &stock, Some("FM-1_016")).unwrap();
-        assert_eq!(steps.len(), 1);
-        assert_eq!(steps[0].kind, StepKind::Target);
+        assert_eq!(plan("FM-1_921", &stock), Err(Refusal::StockNeedsMUpgrade));
+        // si ya está en el oficial, no hay nada que escribir
+        assert!(matches!(
+            plan("FM-1_016", &stock),
+            Err(Refusal::AlreadyThere(_))
+        ));
     }
 
     #[test]
-    fn sin_paquete_oficial_no_se_puede_pasar_de_fork_a_fork() {
-        let error = plan(
-            "FM-1_909",
-            &Target::new("sloop", "FM-1_900", Family::Sloop),
-            None,
+    fn un_fork_desconocido_es_directo() {
+        let steps = plan("FM-1_777", &jiant("FM-1_909")).unwrap();
+        assert_eq!(
+            steps.len(),
+            1,
+            "no se adivina: se escribe directo y se avisa"
         );
-        assert_eq!(error, Err(Refusal::NoStock));
-    }
-
-    #[test]
-    fn un_fork_desconocido_se_trata_como_fork() {
-        let steps = plan("FM-1_777", &jiant("FM-1_909"), Some("FM-1_016")).unwrap();
-        assert_eq!(steps.len(), 2, "no se adivina: pasa por el oficial");
         assert_eq!(Family::from_identity("FM-1_777"), Family::Other);
     }
 
     #[test]
     fn en_modo_update_se_niega_siempre() {
         assert_eq!(
-            plan("ota-FM-1_921", &jiant("FM-1_909"), Some("FM-1_016")),
+            plan("ota-FM-1_921", &jiant("FM-1_909")),
             Err(Refusal::MidUpdate)
         );
     }
@@ -316,7 +303,7 @@ mod tests {
     #[test]
     fn la_misma_identidad_no_se_reescribe() {
         assert_eq!(
-            plan("FM-1_909", &jiant("FM-1_909"), None),
+            plan("FM-1_909", &jiant("FM-1_909")),
             Err(Refusal::AlreadyThere("FM-1_909".to_string()))
         );
     }

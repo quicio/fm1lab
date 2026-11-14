@@ -73,7 +73,7 @@ identidad final; si no coincide con la del paquete, SHALL reportarlo como error.
 #### Scenario: Paquete sin loader
 
 - **WHEN** el paquete no trae el loader de Felucca (stock V16)
-- **THEN** el lab lo rechaza salvo `--force`/checkbox explícito y lo advierte en la ficha
+- **THEN** el lab lo rechaza como destino OTA y manda a M-UPGRADE, sin ofrecer `--force` como solución
 
 ### Requirement: CLI equivalente
 

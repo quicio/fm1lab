@@ -394,6 +394,12 @@ fn stock_package(catalog: &fm1_store::Catalog) -> Option<&fm1_store::FirmwareEnt
         .find(|entry| Family::parse(&entry.family) == Family::Stock)
 }
 
+/// Si el cambio cruza de fork y por lo tanto puede mezclar la zona de datos.
+fn crosses_forks(current: &str, target: &Target) -> bool {
+    let now = Family::from_identity(current);
+    now != target.family && now != Family::Stock && target.family != Family::Stock
+}
+
 fn print_plan(steps: &[PlanStep]) {
     println!(
         "ruta: {} paso{}",
@@ -435,8 +441,6 @@ fn plan_for(
     target: &Target,
     straight: bool,
 ) -> Result<Vec<PlanStep>> {
-    let catalog = fm1_store::Catalog::load();
-    let stock = stock_package(&catalog);
     let (identity, port) = installer.probe().map_err(flash_error)?;
     println!("device: {} ({port})", identity.text);
     if straight {
@@ -449,12 +453,8 @@ fn plan_for(
             reason: "sin ruta: se escribe directo (--straight)",
         }]);
     }
-    route::plan(
-        &identity.text,
-        target,
-        stock.map(|entry| entry.identity.as_str()),
-    )
-    .map_err(|refusal: Refusal| Error::Message(refusal.to_string()))
+    route::plan(&identity.text, target)
+        .map_err(|refusal: Refusal| Error::Message(refusal.to_string()))
 }
 
 /// Instala un `.fwsc` por el protocolo OTA, pasando antes por el oficial si cambia de familia.
@@ -545,8 +545,11 @@ fn flash(dry: bool, yes: bool, force: bool, straight: bool, rest: &[String]) -> 
             )));
         }
     }
-    if steps.len() > 1 {
-        println!("nota: los proyectos del firmware anterior se perdieron al pasar por el oficial");
+    if steps
+        .iter()
+        .any(|step| step.reason.contains("directo entre forks"))
+    {
+        println!("nota: la zona de datos del firmware anterior puede quedar incompatible");
     }
     println!("listo: el aparato corre {}", package.product);
     Ok(())
@@ -606,16 +609,10 @@ fn route_cmd(rest: &[String]) -> Result<()> {
         "paquete: {} ({}, identidad {})",
         target.label, target.family, target.identity
     );
-    let catalog = fm1_store::Catalog::load();
-    let stock = stock_package(&catalog);
-    let steps = route::plan(
-        &current,
-        &target,
-        stock.map(|entry| entry.identity.as_str()),
-    )
-    .map_err(|refusal: Refusal| Error::Message(refusal.to_string()))?;
+    let steps = route::plan(&current, &target)
+        .map_err(|refusal: Refusal| Error::Message(refusal.to_string()))?;
     print_plan(&steps);
-    if steps.len() > 1 {
+    if crosses_forks(&current, &target) {
         println!("se pierde: los proyectos y presets del firmware actual");
     }
     Ok(())

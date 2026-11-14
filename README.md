@@ -71,11 +71,12 @@ La biblioteca instala paquetes `.fwsc` por OTA/Felucca. Antes de escribir verifi
 respalda config y paquetes, pausa transporte/sondeo/monitor y pide confirmación explícita.
 
 La ruta la decide `fm1-core::route`, no quien instala: misma familia o desde el firmware oficial es
-directo; de fork a fork pasa por el oficial en el medio (la zona de datos no se reescribe). En modo
-update no se empieza otra escritura. `fm1ctl route <id>` muestra la ruta sin tocar el aparato.
+directo; de fork a fork también es **directo**, con aviso (el stock V16 no es un paquete Felucca y no
+puede ser paso intermedio). En modo update no se empieza otra escritura. `fm1ctl route <id>` muestra la
+ruta sin tocar el aparato.
 
-**Cambiar de fork puede perder los proyectos/presets del firmware actual.** El instalador Python de
-`m-vave` queda como rescate.
+**Cambiar de fork puede dejar la zona de datos (proyectos/presets) incompatible.** El stock se instala
+con M-UPGRADE; el instalador Python de `m-vave` queda como rescate.
 
 ## Documentación
 
